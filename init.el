@@ -37,7 +37,6 @@
 
 (use-package yasnippet
   :straight t yasnippet-snippets
-  :defer t
   :init
   (yas-global-mode)
   :hook
