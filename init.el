@@ -21,13 +21,36 @@
 
 (setq custom-file (expand-file-name "~/.config/emacs/customize.el"))
 (load custom-file)
+(setq use-package-always-defer t)
 
+(use-package undo-tree
+  :ensure t
+  :config
+  (global-undo-tree-mode 1)
+  :diminish undo-tree-mode)
+
+(use-package eldoc
+  :diminish eldoc-mode)
+(buffer-substring-no-properties 1 3)
+(use-package page-break-lines
+  :ensure t
+  :config
+  (global-page-break-lines-mode 1)
+  :diminish (page-break-lines-mode visual-line-mode))
+
+(defun swiper-current-word ()
+  (interactive)
+  (let ((word (buffer-substring-no-properties
+			   (progn (backward-whitespace) (point))
+			   (progn (forward-whitespace) (point)))))
+	(swiper word)))
+    
 
 (use-package reverse-im
   :custom
   (reverse-im-input-methods '("russian-typewriter"))
   :config
-  (reverse-im-mode t))
+  (reverse-im-mode))
 
 
 (use-package async
@@ -37,6 +60,7 @@
 
 (use-package yasnippet
   :straight t yasnippet-snippets
+  :defer t
   :init
   (yas-global-mode)
   :hook
@@ -46,6 +70,7 @@
 
 
 (use-package ctrlf
+  :straight (ctrlf :type git :host github :repo "veronikazaglotova/ctrlf" :branch "master")
   :init (ctrlf-mode +1))
 
 
@@ -70,22 +95,25 @@
 
 
 (use-package flycheck)
-
-
 (add-hook 'prog-mode-hook  (lambda () (flymake-mode -1)))
 
 
 (use-package consult-selectrum
+  :straight (consult-selectrum :type git :host github :repo "minad/consult" :branch "main")
+  :init
+  (consult-preview-mode)
   :bind
   ("C-x b" . consult-buffer)
   ("M-y" . consult-yank-pop)
-  ("C-," . consult-line))
+  ("C-," . consult-line)
+  :custom
+  (consult-line-point-placement 'match-end))
 
 
 (use-package base16-theme
   :config
   (setq base16-highlight-mode-line t)
-  (load-theme 'base16-google-light))
+  (load-theme 'base16-google-light t))
 
 
 (defun ap/garbage-collect ()
@@ -100,16 +128,16 @@
 
 
 ;; replaces Emacs' icomplete with selectrum
+
 (use-package selectrum-prescient
-  :init
-  (selectrum-mode +1)
   :config
+  (selectrum-mode +1)
   ;; to make sorting and filtering more intelligent
   (selectrum-prescient-mode +1)
+
   ;; to save your command history on disk, so the sorting gets more
   ;; intelligent over time
   (prescient-persist-mode +1))
-  
 
 
 ;; Enable richer annotations using the Marginalia package
@@ -130,7 +158,8 @@
   (elpy-enable))
 
 
-(use-package company
+(use-package company-prescient
+  :config
   :custom
   (company-minimum-prefix-length 2 "I don't like company constantly popping up. I can type any 2 letter combo myself.")
   (company-idle-delay 0.3 "Company too fast.")
@@ -149,10 +178,11 @@
   (setq org-startup-folded nil))
 
 
-(use-package org-bullets
+(use-package slime
+  :straight (slime :type git :host github :repo "slime/slime")
   :config
-  (setq inhibit-compacting-font-caches t)
-  (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
+  (add-to-list 'exec-path "/usr/local/bin")
+  (setq inferior-lisp-program "sbcl"))
 
 
 (use-package rainbow-delimiters		; Sounds gay
@@ -162,7 +192,7 @@
 
 (use-package avy
   :custom
-  (avy-keys '(?e ?t ?h ?u ?o ?n) "Avy to use home row, all keys but pinkies and middle column on Dvorak.")
+  (avy-keys '(?e ?t ?h ?u ?o ?n) "Use home row with avy. All keys but pinkies and middle column on Dvorak.")
   (avy-timeout-seconds 0.7 "Set my own avy timer timeout.")
   :bind
   ("C-'" . avy-goto-char-timer-end))
@@ -177,20 +207,24 @@
   ;; making Emacs saner, removing ugly things, etc
   (tool-bar-mode -1)
   (toggle-scroll-bar -1)
-  (menu-bar-mode -1)
+  (menu-bar-mode +1)
   (set-frame-font "Ubuntu Mono 13" nil t)
   (global-display-line-numbers-mode 1)
   (delete-selection-mode t) ; this makes emacs delete text if I highlight anything and start typing, bretty cool
   (show-paren-mode 1) ; show parents
   (desktop-save-mode 1)	; save current session and start it again on next startup
   (windmove-default-keybindings)	   ; keybindings for switching windows
+  (global-prettify-symbols-mode t)
+  (electric-pair-mode t)
   (lambda () ;; making more keys available
     (setq unmapped '("C-i" "C-[" "C-m"))
     (dolist (k unmapped)
       (define-key input-decode-map (kbd k) (kbd (concat "<"  k ">")))))
   (global-visual-line-mode t) ; this thing adds nice thingies.
-  (setq show-paren-style 'mixed)
+
+
   :custom
+  (line-move-visual nil "Use logical lines in visual-line-mode")
   (comment-column 0 "Make comments appear right after the code instead of indenting it")
   (comment-fill-column 0)
   (help-window-select t "Autoselect windows")
@@ -204,7 +238,20 @@
   (select-enable-clipboard t "After copying with Ctrl+c in X11, you can paste with C-y in emacs")  
   (help-window-select t "Automatic switch to help buffers")
   (frame-title-format '("%f [%m]"))
-  
+  (inhibit-startup-screen t "No startup screen")
+  (show-paren-delay 0)
+  (tab-width 4)
+  (standard-indent 4)
+  (c-basic-offset tab-width)
+  (electric-indent-inhibit t)
+  (indent-tabs-mode t)
+  (backward-delete-char-untabify-method nil)
+  (electric-pair-pairs '(
+                            (?\{ . ?\})
+                            (?\( . ?\))
+                            (?\[ . ?\])
+                            (?\" . ?\")))
+  (show-paren-style 'mixed)
   :bind
   ("C-DEL" . backward-delete-word)	; do not copy the word when C-bspc
   ;; my custom hotkeys
@@ -238,9 +285,6 @@
 
 ;; y/n instead of yes/no everywhere
 (defalias 'yes-or-no-p 'y-or-n-p)
-
-
-(load-file (expand-file-name "menuprefix.el" user-emacs-directory))
 
 
 ;; There go the functions.
@@ -286,11 +330,11 @@ When pressed again, this will go to the end of line. This alternates between the
     (delete-other-windows)
     (let ((first-win (selected-window)))
       (funcall splitter)
-      (if this-win-2nd (other-window 1))
+      (when this-win-2nd (other-window 1))
       (set-window-buffer (selected-window) this-win-buffer)
       (set-window-buffer (next-window) next-win-buffer)
       (select-window first-win)
-      (if this-win-2nd (other-window 1))))))
+      (when this-win-2nd (other-window 1))))))
 
 
 (defun kill-or-yank-dwim (&optional arg)
@@ -304,14 +348,11 @@ When pressed again, this will go to the end of line. This alternates between the
      (call-interactively 'yank))))
 
 
-(makunbound 'viper-current-state)
-
-
 (defun switch-to-scratch-buffer ()
     "Switches to scratch buffer, switches back if called again"
     (interactive)
     (if (equal (current-buffer) (get-buffer "*scratch*"))
-	(previous-buffer)
+	(previous-buffer) 
       (switch-to-buffer "*scratch*")))
 
 
@@ -413,10 +454,6 @@ With argument, do this that many times."
   (setq latexmkbuffer (current-buffer)))
 
 
-(setq test 5)
-(boundp 'test)
-
-
 (defun latex-start-or-restart ()
   "This function starts LaTeX and yes."
   (interactive)
@@ -430,6 +467,8 @@ With argument, do this that many times."
       (vterm-send-return)
       (setlatexmkbuffer)
       (switch-to-buffer usedbuffer))))
+
+
 (defun restartlatexgen ()
   "Restarts latexmk if it ran in a problem. Use this after you fixed the problem"
   (interactive)
@@ -453,7 +492,3 @@ With argument, do this that many times."
       (insert "\\\\")
       (next-line)))) (point)
   (undo-boundary))
-(let ((thing 5))
-  (setq the 6))
-
-
