@@ -2,11 +2,6 @@
 ;; C-x C-e this function to make everything separated by 2 newlines: (replace-regexp "^\n+" "\n\n")
 
 
-;; Viper-mode for a few things
-(setq viper-mode nil)
-(require 'viper)
-
-
 (setq straight-use-package-by-default t)
 (setq straight-repository-branch "develop")
 (defvar bootstrap-version)
@@ -32,9 +27,11 @@
     (load-file custom-file))
 (setq use-package-always-demand t)
 
+(use-package evil
+  :hook
+  (text-mode . evil-local-mode))
 
 (use-package undo-tree
-  :ensure t
   :config
   (global-undo-tree-mode 1)
   :diminish undo-tree-mode)
@@ -45,7 +42,6 @@
 
 
 (use-package page-break-lines
-  :ensure t
   :config
   (global-page-break-lines-mode 1)
   :diminish (page-break-lines-mode visual-line-mode))    
@@ -275,14 +271,10 @@
   ("RET" . newline-and-indent)
   ("M-a" . delete-indentation)
   ("C-x e" . macro-or-region-macro)  
+  ("M-s s" . switch-to-scratch-buffer)
   ;; turning off annoying shit
   ("C-z" . nil)
-;; things I miss from Vim
-  ("M-o" . viper-open-line) ; Open a new line below
-  ("C-o" . viper-Open-line) ; Open a new line above and indent
-  ("M-k" . kill-whole-line)
-  ("C-x 4" . toggle-window-split)
-  ("M-s s" . switch-to-scratch-buffer))
+ )
 
 
 ;; bury *scratch* buffer instead of kill it
