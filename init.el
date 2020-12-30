@@ -1,5 +1,12 @@
 ;; -*- lexical-binding: t; -*-
-;; (replace-regexp "^\n+" "\n\n")
+;; C-x C-e this function to make everything separated by 2 newlines: (replace-regexp "^\n+" "\n\n")
+
+
+;; Viper-mode for a few things
+(setq viper-mode nil)
+(require 'viper)
+
+
 (setq straight-use-package-by-default t)
 (setq straight-repository-branch "develop")
 (defvar bootstrap-version)
@@ -17,11 +24,14 @@
 
 
 (straight-use-package 'use-package)
+(message user-emacs-directory)
 
 
-(setq custom-file (expand-file-name "~/.config/emacs/customize.el"))
-(load custom-file)
-(setq use-package-always-defer t)
+(setq custom-file (concat user-emacs-directory "customize.el"))
+(when (file-exists-p custom-file)
+    (load-file custom-file))
+(setq use-package-always-demand t)
+
 
 (use-package undo-tree
   :ensure t
@@ -29,22 +39,17 @@
   (global-undo-tree-mode 1)
   :diminish undo-tree-mode)
 
+
 (use-package eldoc
   :diminish eldoc-mode)
-(buffer-substring-no-properties 1 3)
+
+
 (use-package page-break-lines
   :ensure t
   :config
   (global-page-break-lines-mode 1)
-  :diminish (page-break-lines-mode visual-line-mode))
+  :diminish (page-break-lines-mode visual-line-mode))    
 
-(defun swiper-current-word ()
-  (interactive)
-  (let ((word (buffer-substring-no-properties
-			   (progn (backward-whitespace) (point))
-			   (progn (forward-whitespace) (point)))))
-	(swiper word)))
-    
 
 (use-package reverse-im
   :custom
@@ -107,7 +112,7 @@
   ("M-y" . consult-yank-pop)
   ("C-," . consult-line)
   :custom
-  (consult-line-point-placement 'match-end))
+  (consult-line-point-placement 'match-end)) ; sadly point-placement doesn't work with Selectrum
 
 
 (use-package base16-theme
@@ -129,11 +134,13 @@
 
 ;; replaces Emacs' icomplete with selectrum
 
+
 (use-package selectrum-prescient
   :config
   (selectrum-mode +1)
   ;; to make sorting and filtering more intelligent
   (selectrum-prescient-mode +1)
+
 
   ;; to save your command history on disk, so the sorting gets more
   ;; intelligent over time
@@ -155,7 +162,10 @@
 
 (use-package elpy
   :config
-  (elpy-enable))
+  (elpy-enable)
+  (when (load "flycheck" t t)
+	(setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
+	(add-hook 'elpy-mode-hook 'flycheck-mode)))
 
 
 (use-package company-prescient
@@ -168,7 +178,7 @@
   (company-dabbrev-downcase 0)
   (add-to-list 'company-backends 'company-math-symbols-unicode)
   :hook
-  (after-init . global-company-mode))
+  (prog-mode . company-prescient-mode))
 
 
 (use-package org
@@ -220,9 +230,9 @@
     (setq unmapped '("C-i" "C-[" "C-m"))
     (dolist (k unmapped)
       (define-key input-decode-map (kbd k) (kbd (concat "<"  k ">")))))
-  (global-visual-line-mode t) ; this thing adds nice thingies.
-
-
+  (global-visual-line-mode t) ; this thing enables line wrapping.
+  
+  
   :custom
   (line-move-visual nil "Use logical lines in visual-line-mode")
   (comment-column 0 "Make comments appear right after the code instead of indenting it")
@@ -268,8 +278,8 @@
   ;; turning off annoying shit
   ("C-z" . nil)
 ;; things I miss from Vim
-  ("M-o" . open-next-line) ; Open a new line below
-  ("C-o" . open-previous-line) ; Open a new line above and indent
+  ("M-o" . viper-open-line) ; Open a new line below
+  ("C-o" . viper-Open-line) ; Open a new line above and indent
   ("M-k" . kill-whole-line)
   ("C-x 4" . toggle-window-split)
   ("M-s s" . switch-to-scratch-buffer))
@@ -356,17 +366,6 @@ When pressed again, this will go to the end of line. This alternates between the
       (switch-to-buffer "*scratch*")))
 
 
-(defun open-next-line (arg)
-  "Move to the next line and then opens a line.
-    See also `newline-and-indent'."
-  (interactive "p")
-  (end-of-line)
-  (open-line arg)
-  (forward-line 1)
-  (when 'newline-and-indent
-    (indent-according-to-mode)))
-
-
 (defun avy-goto-char-timer-end (&optional arg)
   "Read one or many consecutive chars and jump to the last one.
 The window scope is determined by `avy-all-windows' (ARG negates it)."
@@ -374,16 +373,6 @@ The window scope is determined by `avy-all-windows' (ARG negates it)."
   (avy-goto-char-timer arg)
   (dotimes (i (length avy-text))
     (forward-char)))
-
-
-(defun open-previous-line (arg)
-  "Open a new line before the current one. 
-     See also `newline-and-indent'."
-  (interactive "p")
-  (beginning-of-line)
-  (open-line arg)
-  (when 'newline-and-indent
-    (indent-according-to-mode)))
 
 
 (defvar back-to-indent-dwim-p nil)
