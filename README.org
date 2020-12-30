@@ -1,2 +1,6 @@
-# dotemacs
-It's empty in here
+* How to install:
+  Run =git clone https://github.com/veronikazaglotova/dotemacs ~/.emacs.d= in your terminal window.
+
+* How to use:
+  Read the source code and figure it out. There are docstrings and/or comments for every non-trivial task.
+  You can still read the source code if you're not a programmer. I'm not a programmer, but I can configure Emacs.
