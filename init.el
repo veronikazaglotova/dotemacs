@@ -25,16 +25,18 @@
 (setq custom-file (concat user-emacs-directory "customize.el"))
 (when (file-exists-p custom-file)
     (load-file custom-file))
+
 (setq use-package-always-demand t)
 
-(use-package evil
-  :hook
-  (text-mode . evil-local-mode))
+(use-package racket-mode)
+
+(use-package sicp)
 
 (use-package undo-tree
   :config
   (global-undo-tree-mode 1)
-  :diminish undo-tree-mode)
+  :diminish
+  undo-tree)
 
 
 (use-package eldoc
@@ -231,9 +233,6 @@
   
   :custom
   (line-move-visual nil "Use logical lines in visual-line-mode")
-  (comment-column 0 "Make comments appear right after the code instead of indenting it")
-  (comment-fill-column 0)
-  (help-window-select t "Autoselect windows")
   (disabled-command-function nil "Enable all disabled commands")
   (display-line-numbers-width-start t "Automatically change line numbers width")
   (fast-but-imprecise-scrolling t "Says that it should be fast if you hold down C-v or M-v on wiki, IDK")
@@ -247,10 +246,10 @@
   (inhibit-startup-screen t "No startup screen")
   (show-paren-delay 0)
   (tab-width 4)
-  (standard-indent 4)
+  (standard-indent 4)               
   (c-basic-offset tab-width)
   (electric-indent-inhibit t)
-  (indent-tabs-mode t)
+  (indent-tabs-mode nil)
   (backward-delete-char-untabify-method nil)
   (electric-pair-pairs '(
                             (?\{ . ?\})
@@ -258,8 +257,9 @@
                             (?\[ . ?\])
                             (?\" . ?\")))
   (show-paren-style 'mixed)
+  
   :bind
-  ("C-DEL" . backward-delete-word)	; do not copy the word when C-bspc
+  ("M-DEL" . backward-delete-word)	; do not copy the word when C-bspc
   ;; my custom hotkeys
   ("C-=" . text-scale-increase)
   ("C--" . text-scale-decrease)
@@ -271,10 +271,8 @@
   ("RET" . newline-and-indent)
   ("M-a" . delete-indentation)
   ("C-x e" . macro-or-region-macro)  
-  ("M-s s" . switch-to-scratch-buffer)
-  ;; turning off annoying shit
-  ("C-z" . nil)
- )
+  ("M-s s" . switch-to-scratch-buffer))
+
 
 
 ;; bury *scratch* buffer instead of kill it
@@ -292,19 +290,19 @@
 ;; There go the functions.
 
 
-(defun nequal (i j)
+(defun weeb/nequal (i j)
   (not (equal i j)))
 
 
-(defun load-init-file ()
+(defun weeb/load-init-file ()
   "Load the init file"
   (interactive)
   (load-file user-init-file))
 
 
-(defun end-of-syntax ()
+(defun weeb/end-of-syntax ()
   "Move to the end of code (e.g. everything that isn't comments or spaces/tabs)
-When pressed again, this will go to the end of line. This alternates between these two positions."
+When pressed again, this will go to the end of line."
   (interactive)
   (if (not (equal last-command 'end-of-syntax))
       (progn (skip-syntax-forward "^<" (line-end-position)) ; test
@@ -312,7 +310,7 @@ When pressed again, this will go to the end of line. This alternates between the
     (end-of-line)))
 
 
-(defun toggle-window-split ()
+(defun weeb/toggle-window-split ()
   "Toggle between vertical and horizontal split"
   (interactive)
   (if (= (count-windows) 2)
@@ -339,7 +337,7 @@ When pressed again, this will go to the end of line. This alternates between the
       (when this-win-2nd (other-window 1))))))
 
 
-(defun kill-or-yank-dwim (&optional arg)
+(defun weeb/kill-or-yank-dwim (&optional arg)
   "Kills region if you marked anything, yanks if you didn't"
   (interactive)
   (cond ((use-region-p)
@@ -350,7 +348,7 @@ When pressed again, this will go to the end of line. This alternates between the
      (call-interactively 'yank))))
 
 
-(defun switch-to-scratch-buffer ()
+(defun weeb/switch-to-scratch-buffer ()
     "Switches to scratch buffer, switches back if called again"
     (interactive)
     (if (equal (current-buffer) (get-buffer "*scratch*"))
@@ -358,7 +356,7 @@ When pressed again, this will go to the end of line. This alternates between the
       (switch-to-buffer "*scratch*")))
 
 
-(defun avy-goto-char-timer-end (&optional arg)
+(defun weeb/avy-goto-char-timer-end (&optional arg)
   "Read one or many consecutive chars and jump to the last one.
 The window scope is determined by `avy-all-windows' (ARG negates it)."
   (interactive "P")
@@ -368,29 +366,28 @@ The window scope is determined by `avy-all-windows' (ARG negates it)."
 
 
 (defvar back-to-indent-dwim-p nil)
-(defun back-to-indentation-dwim ()
+(defun weeb/back-to-indentation-dwim ()
   "Go back to the first non-whitespace character. When pressed second time, go to the beginning of the line.
 This function alternates between first non-whitespace and beginning of the line."
   (interactive)
-  (if (and (equal back-to-indent-dwim-p t) (equal last-command 'back-to-indentation-dwim))
+  (if (and (equal back-to-indent-dwim-p t) (equal last-command 'weeb/back-to-indentation-dwim))
       (progn (setq back-to-indent-dwim-p nil) (beginning-of-line))
-    (if (equal last-command 'back-to-indentation-dwim)
+    (if (equal last-command 'weeb/back-to-indentation-dwim)
 	(progn (setq back-to-indent-dwim-p t) (back-to-indentation))
       (progn (setq back-to-indent-dwim-p t) (back-to-indentation)))))
 
 
-(defun backward-delete-word (arg)
+(defun weeb/backward-delete-word (arg)
   "Delete characters backward until encountering the end of a word.
 With argument, do this that many times."
   (interactive "p")
   (delete-word (- arg)))
 
 
-(defun select-in-quote ()
-  "Select text between the nearest left and right delimiters.)
 
-
- the selected char is “c”, not “a(b)c”."
+(defun weeb/select-in-quote ()
+  "Select text between the nearest left and right delimiters
+This was copy&pasted from Xah's website"
   (interactive)
   (let (
         ($skipChars "^'\"`<>(){}[]“”‘’‹›«»「」『』【】〖〗《》〈〉〔〕（）〘〙")
@@ -402,26 +399,26 @@ With argument, do this that many times."
     (set-mark $p1)))
 
 
-(defun get-selected-text ()
+(defun weeb/get-selected-text ()
   (let ((start (region-beginning)) (end (region-end)))
       (buffer-substring start end)))
 
 
-(defun open-in-xdg ()
+(defun weeb/open-in-xdg ()
   "Open selected thingy in xdg"
   (interactive)
   (let* ((file (get-selected-text)))
     (call-process "zathura" nil 0 nil file)))
 
 
-(defun xdg-on-point ()
+(defun weeb/xdg-on-point ()
   "Open a video file the cursor is on"
   (interactive)
   (select-in-quote)
   (open-in-xdg))
 
 
-(defun macro-or-region-macro ()
+(defun weeb/macro-or-region-macro ()
   "Runs a macro on all lines if you highlight anything, runs the macro on current line if nothing is highlighted."
   (interactive)
   (if (use-region-p)
@@ -429,13 +426,13 @@ With argument, do this that many times."
     (kmacro-end-and-call-macro 1)))
 
 
-(defun setlatexmkbuffer ()
+(defun weeb/setlatexmkbuffer ()
   "Sets current buffer as the buffer where latexmk runs. Use this on the terminal emulator."
   (interactive)
   (setq latexmkbuffer (current-buffer)))
 
 
-(defun latex-start-or-restart ()
+(defun weeb/latex-start-or-restart ()
   "This function starts LaTeX and yes."
   (interactive)
   (if (and (boundp 'latexmkbuffer) (get-buffer "vterm"))
@@ -450,7 +447,7 @@ With argument, do this that many times."
       (switch-to-buffer usedbuffer))))
 
 
-(defun restartlatexgen ()
+(defun weeb/restartlatexgen ()
   "Restarts latexmk if it ran in a problem. Use this after you fixed the problem"
   (interactive)
   (let ((usedbuffer (current-buffer)))
@@ -460,7 +457,7 @@ With argument, do this that many times."
   (save-buffer))
 
 
-(defun latex-add-newlines ()
+(defun weeb/latex-add-newlines ()
   "Adds \"\\\\\" at the end of line. With a prefix argument, runs the command for ARG lines."
   (interactive)
   (if (not (use-region-p))
