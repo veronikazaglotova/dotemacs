@@ -1,32 +1,31 @@
 ;; -*- lexical-binding: t; -*-
 ;; C-x C-e this function to make everything separated by 2 newlines: (replace-regexp "^\n+" "\n\n")
 
-
-(setq straight-use-package-by-default t)
-(setq straight-repository-branch "develop")
-(defvar bootstrap-version)
-(let ((bootstrap-file
-       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 5))
-  (unless (file-exists-p bootstrap-file)
-    (with-current-buffer
-        (url-retrieve-synchronously
-         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
-         'silent 'inhibit-cookies)
-      (goto-char (point-max))
-      (eval-print-last-sexp)))
-  (load bootstrap-file nil 'nomessage))
-
-
-(straight-use-package 'use-package)
-(message user-emacs-directory)
-
-
 (setq custom-file (concat user-emacs-directory "customize.el"))
 (when (file-exists-p custom-file)
     (load-file custom-file))
 
 (setq use-package-always-demand t)
+
+(use-package windmove
+  :bind (
+  :prefix-map ctl-t-map
+  :prefix "C-t"
+  ("c" . windmove-up)
+  ("t" . windmove-down)
+  ("h" . windmove-left)
+  ("n" . windmove-right)))
+
+(use-package slime-company
+  :straight (slime-company :host github :type git :repo "anwyn/slime-company" :branch "master")
+  :after (slime company)
+  :config
+  (setq slime-company-completion 'fuzzy
+        slime-company-after-completion 'slime-company-just-one-space)
+  (setq slime-company-completion 'fuzzy
+                slime-company-after-completion
+  'slime-company-just-one-space))
+
 
 (use-package racket-mode)
 
@@ -46,7 +45,11 @@
 (use-package page-break-lines
   :config
   (global-page-break-lines-mode 1)
-  :diminish (page-break-lines-mode visual-line-mode))    
+  :diminish (page-break-lines-mode visual-line-mode))
+
+
+
+
 
 
 (use-package reverse-im
@@ -55,6 +58,17 @@
   :config
   (reverse-im-mode))
 
+;; replace the thingy
+(use-package selectrum-prescient
+  :config
+  (selectrum-mode +1)
+  ;; to make sorting and filtering more intelligent
+  (selectrum-prescient-mode +1)
+
+
+  ;; to save your command history on disk, so the sorting gets more
+  ;; intelligent over time
+  (prescient-persist-mode +1))
 
 (use-package async
   :config
@@ -64,12 +78,19 @@
 (use-package yasnippet
   :straight t yasnippet-snippets
   :defer t
-  :init
+  :config
   (yas-global-mode)
   :hook
   (yas-after-exit-snippet . indent-according-to-mode)
   :custom
   (yas-triggers-in-field t "Snippets inside snippets"))
+
+(use-package highlight-indent-guides
+  :custom
+  (highlight-indent-guides-method 'character)
+  (highlight-indent-guides-responsive 'top)
+  :hook
+  (prog-mode . highlight-indent-guides-mode))
 
 
 (use-package ctrlf
@@ -84,27 +105,31 @@
   (TeX-auto-save t))
 
 
-(use-package magit)
+(use-package haskell-mode)
 
 
 (use-package vterm
   :hook
-  (vterm-mode . (lambda () (display-line-numbers-mode -1)))) ; turn the fuck off numbers in the terminal.
+  (vterm-mode . (lambda () (display-line-numbers-mode -1)))
+  (vterm-mode . (lambda () (ctrlf-local-mode -1)))) ; turn the fuck off numbers in the terminal.
 
 
 (use-package gcmh
   :init
   (gcmh-mode 1))
 
+(use-package flx)
 
-(use-package flycheck)
-(add-hook 'prog-mode-hook  (lambda () (flymake-mode -1)))
+(use-package flycheck
+  :hook
+  (prog-mode . (lambda () (flymake-mode -1)))
+:custom
+  (flycheck-indication-mode 'right-fringe)
+  )
 
 
 (use-package consult-selectrum
   :straight (consult-selectrum :type git :host github :repo "minad/consult" :branch "main")
-  :init
-  (consult-preview-mode)
   :bind
   ("C-x b" . consult-buffer)
   ("M-y" . consult-yank-pop)
@@ -116,33 +141,8 @@
 (use-package base16-theme
   :config
   (setq base16-highlight-mode-line t)
-  (load-theme 'base16-google-light t))
+  (load-theme 'base16-grayscale-light t))
 
-
-(defun ap/garbage-collect ()
-  (interactive)
-  (message (cl-loop for (type size used free) in (garbage-collect)
-		    for used = (* used size)
-		    for free = (* (or free 0) size)
-		    for total = (file-size-human-readable (+ used free))
-		    for used = (file-size-human-readable used)
-		    for free = (file-size-human-readable free)
-		    concat (format "%s: %s + %s = %s\n" type used free total))))
-
-
-;; replaces Emacs' icomplete with selectrum
-
-
-(use-package selectrum-prescient
-  :config
-  (selectrum-mode +1)
-  ;; to make sorting and filtering more intelligent
-  (selectrum-prescient-mode +1)
-
-
-  ;; to save your command history on disk, so the sorting gets more
-  ;; intelligent over time
-  (prescient-persist-mode +1))
 
 
 ;; Enable richer annotations using the Marginalia package
@@ -163,20 +163,22 @@
   (elpy-enable)
   (when (load "flycheck" t t)
 	(setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
+    (setq elpy-modules (delq 'elpy-module-highlight-indentation elpy-modules))
 	(add-hook 'elpy-mode-hook 'flycheck-mode)))
 
 
-(use-package company-prescient
+
+(use-package company
   :config
+  (global-company-mode)
   :custom
-  (company-minimum-prefix-length 2 "I don't like company constantly popping up. I can type any 2 letter combo myself.")
-  (company-idle-delay 0.3 "Company too fast.")
+  (company-minimum-prefix-length 2 "I don't like company constantly popping up. I can type any 2 letters myself.")
+  (company-idle-delay 0.1 "Company too fast.")
   (company-tooltip-align-annotations t "Don't know what this does")
   (company-dabbrev-other-buffers nil "Turn off dabbrev for other buffers")
   (company-dabbrev-downcase 0)
-  (add-to-list 'company-backends 'company-math-symbols-unicode)
-  :hook
-  (prog-mode . company-prescient-mode))
+  (add-to-list 'company-backends 'company-math-symbols-unicode))
+
 
 
 (use-package org
@@ -185,6 +187,7 @@
   (setq org-hide-emphasis-markers t)
   (setq org-startup-folded nil))
 
+(use-package magit)
 
 (use-package slime
   :straight (slime :type git :host github :repo "slime/slime")
@@ -203,7 +206,7 @@
   (avy-keys '(?e ?t ?h ?u ?o ?n) "Use home row with avy. All keys but pinkies and middle column on Dvorak.")
   (avy-timeout-seconds 0.7 "Set my own avy timer timeout.")
   :bind
-  ("C-'" . avy-goto-char-timer-end))
+  ("C-'" . weeb/avy-goto-char-timer-end))
 
 
 (use-package projectile)
@@ -211,17 +214,26 @@
 
 (use-package emacs
   :init
+  (auto-fill-mode)
+
+  (savehist-mode 1)                     ; save history
+
+  ;; Use UTF-8
+  (prefer-coding-system 'utf-8)
+  (when (display-graphic-p)
+    (setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING)))
+
   (async-bytecomp-package-mode 1)
   ;; making Emacs saner, removing ugly things, etc
   (tool-bar-mode -1)
   (toggle-scroll-bar -1)
-  (menu-bar-mode +1)
-  (set-frame-font "Ubuntu Mono 13" nil t)
+  (menu-bar-mode -1)
+  (set-frame-font "Iosevka 13" nil t)
   (global-display-line-numbers-mode 1)
   (delete-selection-mode t) ; this makes emacs delete text if I highlight anything and start typing, bretty cool
   (show-paren-mode 1) ; show parents
-  (desktop-save-mode 1)	; save current session and start it again on next startup
-  (windmove-default-keybindings)	   ; keybindings for switching windows
+  ;; (desktop-save-mode 1)	; save current session and start it again on next startup
+  ;; (windmove-default-keybindings)   ; keybindings for switching windows
   (global-prettify-symbols-mode t)
   (electric-pair-mode t)
   (lambda () ;; making more keys available
@@ -229,49 +241,93 @@
     (dolist (k unmapped)
       (define-key input-decode-map (kbd k) (kbd (concat "<"  k ">")))))
   (global-visual-line-mode t) ; this thing enables line wrapping.
-  
-  
+
+
+  :hook
+  (before-save . delete-trailing-whitespace)
+
+
   :custom
+  (column-number-mode nil)
+  (line-number-mode nil)
+  (size-indication-mode nil)
+  (mode-line-position nil)
+  (mode-line-percent-position nil)
+  (mode-line-in-non-selected-windows nil)
+
+  (blink-matching-delay 0)
+  (blink-matching-paren 1)
+
+
+  (user-mail-address "zelenaruta@gmail.com")
+  (user-full-name "Veronika Zaglotova")
+
+  (ring-bell-function 'ignore "Turn off bell (IDK what this does)")
+
   (line-move-visual nil "Use logical lines in visual-line-mode")
+
   (disabled-command-function nil "Enable all disabled commands")
+
+  (display-line-numbers-width 4)
   (display-line-numbers-width-start t "Automatically change line numbers width")
+  (display-line-numbers-grow-only t)
+
   (fast-but-imprecise-scrolling t "Says that it should be fast if you hold down C-v or M-v on wiki, IDK")
   (scroll-step 1)
   (scroll-margin 1)
   (scroll-conservatively 100 "This line and two lines above make Emacs scroll like it would on other editors.")
+
   (mouse-autoselect-window t "Autoselect mouse on hover")
-  (select-enable-clipboard t "After copying with Ctrl+c in X11, you can paste with C-y in emacs")  
+
+  (select-enable-clipboard t "After copying with Ctrl+c in X11, you can paste with C-y in emacs")
+
   (help-window-select t "Automatic switch to help buffers")
-  (frame-title-format '("%f [%m]"))
+
+  (frame-title-format '(:eval (let ((match (string-match "[ *]" (buffer-name))))
+                                (if (and match (= match 0)) "Emacs" "%b — Emacs"))))
   (inhibit-startup-screen t "No startup screen")
-  (show-paren-delay 0)
+
+
+  ;; Indentation
   (tab-width 4)
-  (standard-indent 4)               
+  (standard-indent 4)
   (c-basic-offset tab-width)
   (electric-indent-inhibit t)
   (indent-tabs-mode nil)
-  (backward-delete-char-untabify-method nil)
-  (electric-pair-pairs '(
-                            (?\{ . ?\})
-                            (?\( . ?\))
-                            (?\[ . ?\])
-                            (?\" . ?\")))
+
+
+  ;; Parents
+  (show-paren-when-point-in-periphery t)
+  (show-paren-delay 0)
+  (electric-pair-pairs '((?\{ . ?\})
+                         (?\( . ?\))
+                         (?\[ . ?\])
+                         (?\" . ?\")))
   (show-paren-style 'mixed)
-  
+
+  ;; cursor settings
+
+  (cursor-in-non-selected-windows nil)
+
   :bind
-  ("M-DEL" . backward-delete-word)	; do not copy the word when C-bspc
-  ;; my custom hotkeys
-  ("C-=" . text-scale-increase)
-  ("C--" . text-scale-decrease)
-  ("M-RET" . vterm)
-  ("C-;" . comment-line)
-  ("C-x M-l" . load-init-file)
-  ("C-e" . end-of-syntax)
-  ("C-a" . back-to-indentation-dwim)
-  ("RET" . newline-and-indent)
-  ("M-a" . delete-indentation)
-  ("C-x e" . macro-or-region-macro)  
-  ("M-s s" . switch-to-scratch-buffer))
+  (
+   ;; my custom hotkeys
+   ("C-=" . text-scale-increase)
+   ("C--" . text-scale-decrease)
+   ("M-RET" . vterm)
+   ("C-;" . comment-line)
+   ("C-x M-l" . weeb/load-init-file)
+   ("C-e" . weeb/end-of-syntax)
+   ("C-a" . weeb/back-to-indentation-dwim)
+   ("RET" . newline-and-indent)
+   ("M-a" . delete-indentation)
+   ("C-x e" . weeb/macro-or-region-macro)
+   ("M-s s" . weeb/switch-to-scratch-buffer)
+   (:map Info-mode-map
+         ("d" . scroll-up-command)
+         ("u" . scroll-down-command)
+         ("n" . Info-next)
+         ("p" . Info-prev))))
 
 
 
@@ -304,7 +360,7 @@
   "Move to the end of code (e.g. everything that isn't comments or spaces/tabs)
 When pressed again, this will go to the end of line."
   (interactive)
-  (if (not (equal last-command 'end-of-syntax))
+  (if (not (equal last-command 'weeb/end-of-syntax))
       (progn (skip-syntax-forward "^<" (line-end-position)) ; test
 	     (skip-syntax-backward " " (line-beginning-position)))
     (end-of-line)))
@@ -352,29 +408,33 @@ When pressed again, this will go to the end of line."
     "Switches to scratch buffer, switches back if called again"
     (interactive)
     (if (equal (current-buffer) (get-buffer "*scratch*"))
-	(previous-buffer) 
+	(previous-buffer)
       (switch-to-buffer "*scratch*")))
 
 
 (defun weeb/avy-goto-char-timer-end (&optional arg)
-  "Read one or many consecutive chars and jump to the last one.
-The window scope is determined by `avy-all-windows' (ARG negates it)."
+  "Read one or many consecutive chars and jump to the last one. With
+prefix ARG go to the first character instead."
   (interactive "P")
-  (avy-goto-char-timer arg)
-  (dotimes (i (length avy-text))
-    (forward-char)))
+  (if (not arg)
+      (unless (eq (avy-goto-char-timer) t)
+        (forward-char (length avy-text)))
+    (avy-goto-char-timer)))
 
 
-(defvar back-to-indent-dwim-p nil)
 (defun weeb/back-to-indentation-dwim ()
   "Go back to the first non-whitespace character. When pressed second time, go to the beginning of the line.
 This function alternates between first non-whitespace and beginning of the line."
   (interactive)
-  (if (and (equal back-to-indent-dwim-p t) (equal last-command 'weeb/back-to-indentation-dwim))
-      (progn (setq back-to-indent-dwim-p nil) (beginning-of-line))
-    (if (equal last-command 'weeb/back-to-indentation-dwim)
-	(progn (setq back-to-indent-dwim-p t) (back-to-indentation))
-      (progn (setq back-to-indent-dwim-p t) (back-to-indentation)))))
+  (if (equal last-command 'weeb/back-to-indentation-dwim)
+      (beginning-of-line)
+    (back-to-indentation)))
+
+
+(defun weeb/delete-word (arg)
+  "Delete characters forward until encountering the start of a word. With argument, do this ARG times"
+  (interactive "p")
+  (delete-region (point) (progn (forward-word arg) (point))))
 
 
 (defun weeb/backward-delete-word (arg)
