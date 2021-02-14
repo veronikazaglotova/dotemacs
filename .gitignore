@@ -4,3 +4,4 @@
 !.gitignore
 !init.el
 !README.org
+!early-init.el

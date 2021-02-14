@@ -1,89 +1,159 @@
+;;; init.el --- my Emacs configuration file
 ;; -*- lexical-binding: t; -*-
-;; C-x C-e this function to make everything separated by 2 newlines: (replace-regexp "^\n+" "\n\n")
+;; C-x C-e this function to make everything separated by 2 newline:
+;; (replace-regexp "^\n+" "\n\n")
 
-(setq custom-file (concat user-emacs-directory "customize.el"))
-(when (file-exists-p custom-file)
-    (load-file custom-file))
 
-(setq use-package-always-demand t)
+;;; Commentary:
+;; I like Emacs
 
-(use-package windmove
-  :bind (
-  :prefix-map ctl-t-map
-  :prefix "C-t"
-  ("c" . windmove-up)
-  ("t" . windmove-down)
-  ("h" . windmove-left)
-  ("n" . windmove-right)))
 
-(use-package slime-company
-  :straight (slime-company :host github :type git :repo "anwyn/slime-company" :branch "master")
-  :after (slime company)
+;;; Code:
+
+
+(use-package use-package-hydra)         ;I don't know how to use this
+                                        ;but let it be
+(use-package diminish)			;I NEED THIS
+
+
+(use-package counsel
+  :straight t ivy-rich ivy-prescient pcre2el
   :config
-  (setq slime-company-completion 'fuzzy
-        slime-company-after-completion 'slime-company-just-one-space)
-  (setq slime-company-completion 'fuzzy
-                slime-company-after-completion
-  'slime-company-just-one-space))
+  (setcdr (assq t ivy-format-functions-alist)
+          #'ivy-format-function-line)
+  (ivy-prescient-mode 1)
+  (ivy-rich-mode)
+  (prescient-persist-mode 1)
+  (counsel-mode 1)
+  :bind (:map ivy-minibuffer-map
+	          ("C-r" . minibuffer-history)
+	          ("TAB" . ivy-alt-done))
+  (:map ctl-x-map
+        ("k" . kill-current-buffer))
+  :custom
+  (ivy-use-virtual-buffers t)
+  (enable-recursive-minibuffers t)
+  :diminish
+  counsel-mode
+  ivy-rich-mode
+  ivy-prescient-mode)
 
 
-(use-package racket-mode)
+(use-package ace-window
+  :bind
+  ("M-s" . ace-window)
+  :custom
+  (aw-keys '(?u ?h ?t ?e ?n ?o))
+  (aw-dispatch-alist
+   '((?x aw-delete-window "Delete Window")
+	 (?m aw-swap-window "Swap Windows")
+	 (?M aw-move-window "Move Window")
+	 (?c aw-copy-window "Copy Window")
+	 (?s aw-switch-buffer-in-window "Select Buffer")
+	 (?F aw-flip-window)
+	 (?s aw-switch-buffer-other-window "Switch Buffer Other Window")
+	 (?f aw-split-window-fair "Split Fair Window")
+	 (?v aw-split-window-vert "Split Vert Window")
+	 (?V aw-split-window-horz "Split Horz Window")
+	 (?k delete-other-windows "Delete Other Windows")
+	 (?/ aw-show-dispatch-help))))
 
-(use-package sicp)
+
+(use-package swiper
+  :bind
+  ("C-s" . swiper))
+
+
+(use-package avy
+  :custom
+  (avy-keys '(?e ?t ?h ?u ?o ?n) "Use home row with avy. All keys but pinkies and middle column on Dvorak.")
+  (avy-timeout-seconds 0.7 "Avy is too fast and I'm a boomer.")
+  :bind
+  ("C-r" . weeb/avy-goto-char-timer-end)
+  ("M-r" . avy-goto-char-timer)
+  :config
+  (defun weeb/avy-goto-char-timer-end (&optional arg)
+    "Read one or many consecutive chars and jump to the last one. With
+prefix ARG go to the first character instead."
+    (interactive "P")
+    (if (not arg)
+	    (unless (eq (avy-goto-char-timer) t)
+          (forward-char (length avy-text)))
+      (avy-goto-char-timer))))
+
+
+(use-package boon)
+
+
+(use-package sly)
+
+
+(use-package magit)
+
 
 (use-package undo-tree
   :config
   (global-undo-tree-mode 1)
   :diminish
-  undo-tree)
+  undo-tree-mode)
 
 
 (use-package eldoc
   :diminish eldoc-mode)
 
 
+(use-package company
+  :straight t yasnippet-snippets
+  :custom
+  (company-minimum-prefix-length 2)
+  (company-idle-delay 0.1)
+  (company-tooltip-align-annotations t)
+  (company-dabbrev-other-buffers nil)
+  (company-dabbrev-downcase 0)
+  (company--show-numbers t)
+  :config
+  (global-company-mode 1)
+  (yas-global-mode 1)
+  :diminish
+  company-mode
+  yas-global-mode
+  yas-minor-mode)
+
+
+(use-package telephone-line
+  :config
+  (telephone-line-mode 1))
+
+
+(use-package flycheck
+  :config
+  (global-flycheck-mode 1)
+  :custom
+  (flycheck-emacs-lisp-load-path 'inherit)
+  :diminish
+  flycheck-mode)
+
+
 (use-package page-break-lines
   :config
-  (global-page-break-lines-mode 1)
-  :diminish (page-break-lines-mode visual-line-mode))
-
-
-
-
-
-
-(use-package reverse-im
+  (global-page-break-lines-mode)
   :custom
-  (reverse-im-input-methods '("russian-typewriter"))
+  (line-move-visual nil)
+  :diminish
+  (page-break-lines-mode visual-line-mode))
+
+
+(use-package emacs 			; fonts and stuff
   :config
-  (reverse-im-mode))
+  (set-frame-font "Iosevka 12" nil t)
+  (prefer-coding-system 'utf-8))
 
-;; replace the thingy
-(use-package selectrum-prescient
-  :config
-  (selectrum-mode +1)
-  ;; to make sorting and filtering more intelligent
-  (selectrum-prescient-mode +1)
-
-
-  ;; to save your command history on disk, so the sorting gets more
-  ;; intelligent over time
-  (prescient-persist-mode +1))
 
 (use-package async
   :config
-  (dired-async-mode))
+  (dired-async-mode)
+  (async-bytecomp-package-mode))
 
-
-(use-package yasnippet
-  :straight t yasnippet-snippets
-  :defer t
-  :config
-  (yas-global-mode)
-  :hook
-  (yas-after-exit-snippet . indent-according-to-mode)
-  :custom
-  (yas-triggers-in-field t "Snippets inside snippets"))
 
 (use-package highlight-indent-guides
   :custom
@@ -93,440 +163,206 @@
   (prog-mode . highlight-indent-guides-mode))
 
 
-(use-package ctrlf
-  :straight (ctrlf :type git :host github :repo "veronikazaglotova/ctrlf" :branch "master")
-  :init (ctrlf-mode +1))
-
-
-(use-package company-auctex
-  :straight t auctex company-math
-  :init (company-auctex-init)
-  :custom
-  (TeX-auto-save t))
-
-
 (use-package haskell-mode)
 
 
-(use-package vterm
-  :hook
-  (vterm-mode . (lambda () (display-line-numbers-mode -1)))
-  (vterm-mode . (lambda () (ctrlf-local-mode -1)))) ; turn the fuck off numbers in the terminal.
-
-
-(use-package gcmh
-  :init
-  (gcmh-mode 1))
-
-(use-package flx)
-
-(use-package flycheck
-  :hook
-  (prog-mode . (lambda () (flymake-mode -1)))
-:custom
-  (flycheck-indication-mode 'right-fringe)
-  )
-
-
-(use-package consult-selectrum
-  :straight (consult-selectrum :type git :host github :repo "minad/consult" :branch "main")
+(use-package term
   :bind
-  ("C-x b" . consult-buffer)
-  ("M-y" . consult-yank-pop)
-  ("C-," . consult-line)
-  :custom
-  (consult-line-point-placement 'match-end)) ; sadly point-placement doesn't work with Selectrum
+  ("M-<return>" . ansi-term))
+
+
+(use-package smartparens
+  :config
+  (smartparens-global-mode 1)
+  (show-smartparens-global-mode 1)
+  (require 'smartparens-config)
+  :diminish
+  smartparens-strict-mode
+  smartparens-mode
+  :bind (
+	     :prefix-map ctl-quote-map
+		 :prefix "C-'"
+		 ("0" . sp-beginning-of-sexp)
+		 ("e" . sp-end-of-sexp)))
 
 
 (use-package base16-theme
   :config
-  (setq base16-highlight-mode-line t)
-  (load-theme 'base16-grayscale-light t))
+  (load-theme 'base16-solarflare t))
 
 
-
-;; Enable richer annotations using the Marginalia package
-(use-package marginalia
-  :straight (marginalia :type git :host github :repo "minad/marginalia" :branch "main")
+(use-package emacs			; remove fugly stuff
   :config
-  (marginalia-mode)
-  (setq marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light)))
-
-
-(use-package which-key
-  :config
-  (which-key-mode))
-
-
-(use-package elpy
-  :config
-  (elpy-enable)
-  (when (load "flycheck" t t)
-	(setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
-    (setq elpy-modules (delq 'elpy-module-highlight-indentation elpy-modules))
-	(add-hook 'elpy-mode-hook 'flycheck-mode)))
-
-
-
-(use-package company
-  :config
-  (global-company-mode)
-  :custom
-  (company-minimum-prefix-length 2 "I don't like company constantly popping up. I can type any 2 letters myself.")
-  (company-idle-delay 0.1 "Company too fast.")
-  (company-tooltip-align-annotations t "Don't know what this does")
-  (company-dabbrev-other-buffers nil "Turn off dabbrev for other buffers")
-  (company-dabbrev-downcase 0)
-  (add-to-list 'company-backends 'company-math-symbols-unicode))
-
-
-
-(use-package org
-  :defer t
-  :config
-  (setq org-hide-emphasis-markers t)
-  (setq org-startup-folded nil))
-
-(use-package magit)
-
-(use-package slime
-  :straight (slime :type git :host github :repo "slime/slime")
-  :config
-  (add-to-list 'exec-path "/usr/local/bin")
-  (setq inferior-lisp-program "sbcl"))
-
-
-(use-package rainbow-delimiters		; Sounds gay
-  :hook
-  (prog-mode . rainbow-delimiters-mode))
-
-
-(use-package avy
-  :custom
-  (avy-keys '(?e ?t ?h ?u ?o ?n) "Use home row with avy. All keys but pinkies and middle column on Dvorak.")
-  (avy-timeout-seconds 0.7 "Set my own avy timer timeout.")
-  :bind
-  ("C-'" . weeb/avy-goto-char-timer-end))
-
-
-(use-package projectile)
-
-
-(use-package emacs
-  :init
-  (auto-fill-mode)
-
-  (savehist-mode 1)                     ; save history
-
-  ;; Use UTF-8
-  (prefer-coding-system 'utf-8)
-  (when (display-graphic-p)
-    (setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING)))
-
-  (async-bytecomp-package-mode 1)
-  ;; making Emacs saner, removing ugly things, etc
-  (tool-bar-mode -1)
-  (toggle-scroll-bar -1)
   (menu-bar-mode -1)
-  (set-frame-font "Iosevka 13" nil t)
-  (global-display-line-numbers-mode 1)
-  (delete-selection-mode t) ; this makes emacs delete text if I highlight anything and start typing, bretty cool
-  (show-paren-mode 1) ; show parents
-  ;; (desktop-save-mode 1)	; save current session and start it again on next startup
-  ;; (windmove-default-keybindings)   ; keybindings for switching windows
-  (global-prettify-symbols-mode t)
-  (electric-pair-mode t)
-  (lambda () ;; making more keys available
-    (setq unmapped '("C-i" "C-[" "C-m"))
-    (dolist (k unmapped)
-      (define-key input-decode-map (kbd k) (kbd (concat "<"  k ">")))))
-  (global-visual-line-mode t) ; this thing enables line wrapping.
+  (scroll-bar-mode -1)
+  (tool-bar-mode -1))
 
 
+(use-package display-line-numbers
+  :config
+  (global-display-line-numbers-mode)
+  :custom
+  (display-line-numbers-width 4)
+  (display-line-numbers-width-start t)
+  (display-line-numbers-grow-only t))
+
+
+(use-package emacs                      ;fill-column
+  :config
+  (global-display-fill-column-indicator-mode 1)
+  :custom
+  (auto-fill-function 'do-auto-fill))
+
+
+(use-package emacs                 ;make it behave like normal editors
+  :config
+  (global-display-line-numbers-mode)
+  (delete-selection-mode 1)
+  (global-prettify-symbols-mode 1)
+  (savehist-mode)
+  (prefer-coding-system 'utf-8)
+  (delete-selection-mode)
+  ;; (desktop-save-mode)			;save session between restarts
   :hook
   (before-save . delete-trailing-whitespace)
-
-
   :custom
+  (disabled-command-function nil) ;turn off warnings on scary commands
+
+
+  ;; modeline stuff
   (column-number-mode nil)
   (line-number-mode nil)
-  (size-indication-mode nil)
   (mode-line-position nil)
   (mode-line-percent-position nil)
   (mode-line-in-non-selected-windows nil)
 
-  (blink-matching-delay 0)
-  (blink-matching-paren 1)
 
-
-  (user-mail-address "zelenaruta@gmail.com")
-  (user-full-name "Veronika Zaglotova")
-
-  (ring-bell-function 'ignore "Turn off bell (IDK what this does)")
-
-  (line-move-visual nil "Use logical lines in visual-line-mode")
-
-  (disabled-command-function nil "Enable all disabled commands")
-
-  (display-line-numbers-width 4)
-  (display-line-numbers-width-start t "Automatically change line numbers width")
-  (display-line-numbers-grow-only t)
-
-  (fast-but-imprecise-scrolling t "Says that it should be fast if you hold down C-v or M-v on wiki, IDK")
   (scroll-step 1)
   (scroll-margin 1)
-  (scroll-conservatively 100 "This line and two lines above make Emacs scroll like it would on other editors.")
+  (scroll-conservatively 100)
+  (select-enable-clipboard t)	       ;copy paste between X and Emacs
+  (frame-title-format '(:eval
+			            (let
+			                ((match (string-match "[ *]"
+						                          (buffer-name))))
+                          (if (and match (= match 0)) "Emacs"
+			                "%b — Emacs"))))
+  :bind
+  ("C-=" . text-scale-increase)
+  ("C--" . text-scale-decrease))
 
-  (mouse-autoselect-window t "Autoselect mouse on hover")
 
-  (select-enable-clipboard t "After copying with Ctrl+c in X11, you can paste with C-y in emacs")
-
-  (help-window-select t "Automatic switch to help buffers")
-
-  (frame-title-format '(:eval (let ((match (string-match "[ *]" (buffer-name))))
-                                (if (and match (= match 0)) "Emacs" "%b — Emacs"))))
-  (inhibit-startup-screen t "No startup screen")
-
-
-  ;; Indentation
+(use-package emacs                      ; tabs to spaces
+  :custom
   (tab-width 4)
   (standard-indent 4)
   (c-basic-offset tab-width)
-  (electric-indent-inhibit t)
-  (indent-tabs-mode nil)
+  (indent-tabs-mode nil))
 
 
-  ;; Parents
-  (show-paren-when-point-in-periphery t)
-  (show-paren-delay 0)
-  (electric-pair-pairs '((?\{ . ?\})
-                         (?\( . ?\))
-                         (?\[ . ?\])
-                         (?\" . ?\")))
-  (show-paren-style 'mixed)
+(use-package emacs                      ; custom shit
+  :config
+  (defalias 'yes-or-no-p 'y-or-n-p)	;y or n instead of yes or no
 
-  ;; cursor settings
 
-  (cursor-in-non-selected-windows nil)
+  ;; bury scratch buffer instead of killing it
+  (defadvice kill-buffer (around kill-buffer-around-advice activate)
+    (let ((buffer-to-kill (ad-get-arg 0)))
+      (if (equal buffer-to-kill "*scratch*")
+          (bury-buffer)
+        ad-do-it))))
 
+
+(use-package emacs                  ; editing stuff, default shortcuts
   :bind
-  (
-   ;; my custom hotkeys
-   ("C-=" . text-scale-increase)
-   ("C--" . text-scale-decrease)
-   ("M-RET" . vterm)
-   ("C-;" . comment-line)
-   ("C-x M-l" . weeb/load-init-file)
-   ("C-e" . weeb/end-of-syntax)
-   ("C-a" . weeb/back-to-indentation-dwim)
-   ("RET" . newline-and-indent)
-   ("M-a" . delete-indentation)
-   ("C-x e" . weeb/macro-or-region-macro)
-   ("M-s s" . weeb/switch-to-scratch-buffer)
-   (:map Info-mode-map
-         ("d" . scroll-up-command)
-         ("u" . scroll-down-command)
-         ("n" . Info-next)
-         ("p" . Info-prev))))
+  ("C-x M-l" . weeb/load-init-file)
+  ("C-e" . weeb/end-of-syntax)
+  ("C-a" . weeb/back-to-indentation-dwim)
+  ("RET" . newline-and-indent)
+  ("M-a" . delete-indentation)
+  ("C-y" . weeb/kill-or-yank-dwim)
+  ("C-o" . weeb/er-smart-open-line)
+  ("M-o" . weeb/er-smart-Open-line)
+  (:map ctl-x-map
+	    ("M-s" . weeb/switch-to-scratch-buffer))
+  :init
+  (defun weeb/load-init-file ()
+    "Load the init file"
+    (interactive)
+    (load-file user-init-file))
 
 
-
-;; bury *scratch* buffer instead of kill it
-(defadvice kill-buffer (around kill-buffer-around-advice activate)
-  (let ((buffer-to-kill (ad-get-arg 0)))
-    (if (equal buffer-to-kill "*scratch*")
-        (bury-buffer)
-      ad-do-it)))
-
-
-;; y/n instead of yes/no everywhere
-(defalias 'yes-or-no-p 'y-or-n-p)
-
-
-;; There go the functions.
-
-
-(defun weeb/nequal (i j)
-  (not (equal i j)))
-
-
-(defun weeb/load-init-file ()
-  "Load the init file"
-  (interactive)
-  (load-file user-init-file))
-
-
-(defun weeb/end-of-syntax ()
-  "Move to the end of code (e.g. everything that isn't comments or spaces/tabs)
+  (defun weeb/end-of-syntax ()
+    "Move to the end of code (e.g. everything
+that isn't comments or spaces/tabs)
 When pressed again, this will go to the end of line."
-  (interactive)
-  (if (not (equal last-command 'weeb/end-of-syntax))
-      (progn (skip-syntax-forward "^<" (line-end-position)) ; test
-	     (skip-syntax-backward " " (line-beginning-position)))
-    (end-of-line)))
+    (interactive)
+    (if (not (equal last-command 'weeb/end-of-syntax))
+	    (progn (skip-syntax-forward "^<" (line-end-position)) ; test
+	           (skip-syntax-backward " " (line-beginning-position)))
+      (end-of-line)))
 
 
-(defun weeb/toggle-window-split ()
-  "Toggle between vertical and horizontal split"
-  (interactive)
-  (if (= (count-windows) 2)
-      (let* ((this-win-buffer (window-buffer))
-         (next-win-buffer (window-buffer (next-window)))
-         (this-win-edges (window-edges (selected-window)))
-         (next-win-edges (window-edges (next-window)))
-         (this-win-2nd (not (and (<= (car this-win-edges)
-                     (car next-win-edges))
-                     (<= (cadr this-win-edges)
-                     (cadr next-win-edges)))))
-         (splitter
-          (if (= (car this-win-edges)
-             (car (window-edges (next-window))))
-          'split-window-horizontally
-        'split-window-vertically)))
-    (delete-other-windows)
-    (let ((first-win (selected-window)))
-      (funcall splitter)
-      (when this-win-2nd (other-window 1))
-      (set-window-buffer (selected-window) this-win-buffer)
-      (set-window-buffer (next-window) next-win-buffer)
-      (select-window first-win)
-      (when this-win-2nd (other-window 1))))))
+  (defun weeb/kill-or-yank-dwim (&optional arg)
+    "Kills region if you marked anything, yanks if you didn't"
+    (interactive)
+    (cond ((use-region-p)
+	       (call-interactively 'kill-ring-save))
+	      ((eq last-command 'yank)
+	       (call-interactively 'yank-pop))
+	      (t
+	       (call-interactively 'yank))))
 
 
-(defun weeb/kill-or-yank-dwim (&optional arg)
-  "Kills region if you marked anything, yanks if you didn't"
-  (interactive)
-  (cond ((use-region-p)
-     (call-interactively 'kill-ring-save))
-    ((eq last-command 'yank)
-     (call-interactively 'yank-pop))
-    (t
-     (call-interactively 'yank))))
-
-
-(defun weeb/switch-to-scratch-buffer ()
+  (defun weeb/switch-to-scratch-buffer ()
     "Switches to scratch buffer, switches back if called again"
     (interactive)
     (if (equal (current-buffer) (get-buffer "*scratch*"))
-	(previous-buffer)
+	    (previous-buffer)
       (switch-to-buffer "*scratch*")))
-
-
-(defun weeb/avy-goto-char-timer-end (&optional arg)
-  "Read one or many consecutive chars and jump to the last one. With
-prefix ARG go to the first character instead."
-  (interactive "P")
-  (if (not arg)
-      (unless (eq (avy-goto-char-timer) t)
-        (forward-char (length avy-text)))
-    (avy-goto-char-timer)))
-
-
-(defun weeb/back-to-indentation-dwim ()
-  "Go back to the first non-whitespace character. When pressed second time, go to the beginning of the line.
+  (defun weeb/back-to-indentation-dwim ()
+    "Go back to the first non-whitespace character. When pressed second time, go to the beginning of the line.
 This function alternates between first non-whitespace and beginning of the line."
-  (interactive)
-  (if (equal last-command 'weeb/back-to-indentation-dwim)
-      (beginning-of-line)
-    (back-to-indentation)))
+    (interactive)
+    (if (equal last-command 'weeb/back-to-indentation-dwim)
+	    (beginning-of-line)
+      (back-to-indentation)))
 
 
-(defun weeb/delete-word (arg)
-  "Delete characters forward until encountering the start of a word. With argument, do this ARG times"
-  (interactive "p")
-  (delete-region (point) (progn (forward-word arg) (point))))
+  (defun weeb/er-smart-Open-line ()
+    "Insert an empty line before the current line.
+Position the cursor at its beginning, according to the current mode"
+    (interactive)
+    (move-beginning-of-line nil)
+    (newline-and-indent)
+    (previous-line))
 
 
-(defun weeb/backward-delete-word (arg)
-  "Delete characters backward until encountering the end of a word.
-With argument, do this that many times."
-  (interactive "p")
-  (delete-word (- arg)))
+  (defun weeb/er-smart-open-line ()
+    "Insert an empty line after the current line.
+Position the cursor at its beginning, according to the current mode."
+    (interactive)
+    (move-end-of-line nil)
+    (newline-and-indent)))
 
 
-
-(defun weeb/select-in-quote ()
-  "Select text between the nearest left and right delimiters
-This was copy&pasted from Xah's website"
-  (interactive)
-  (let (
-        ($skipChars "^'\"`<>(){}[]“”‘’‹›«»「」『』【】〖〗《》〈〉〔〕（）〘〙")
-        $p1
-        )
-    (skip-chars-backward $skipChars)
-    (setq $p1 (point))
-    (skip-chars-forward $skipChars)
-    (set-mark $p1)))
+(use-package frames-only-mode
+  :config
+  (frames-only-mode)
+  :bind
+  ("C-x 1" . delete-other-frames)
+  ("C-x 2" . make-frame-command))
 
 
-(defun weeb/get-selected-text ()
-  (let ((start (region-beginning)) (end (region-end)))
-      (buffer-substring start end)))
+(use-package projectile
+  :config
+  (projectile-mode))
 
 
-(defun weeb/open-in-xdg ()
-  "Open selected thingy in xdg"
-  (interactive)
-  (let* ((file (get-selected-text)))
-    (call-process "zathura" nil 0 nil file)))
+(use-package magit)
 
 
-(defun weeb/xdg-on-point ()
-  "Open a video file the cursor is on"
-  (interactive)
-  (select-in-quote)
-  (open-in-xdg))
+(provide 'init)
 
 
-(defun weeb/macro-or-region-macro ()
-  "Runs a macro on all lines if you highlight anything, runs the macro on current line if nothing is highlighted."
-  (interactive)
-  (if (use-region-p)
-      (apply-macro-to-region-lines (region-beginning) (region-end))
-    (kmacro-end-and-call-macro 1)))
-
-
-(defun weeb/setlatexmkbuffer ()
-  "Sets current buffer as the buffer where latexmk runs. Use this on the terminal emulator."
-  (interactive)
-  (setq latexmkbuffer (current-buffer)))
-
-
-(defun weeb/latex-start-or-restart ()
-  "This function starts LaTeX and yes."
-  (interactive)
-  (if (and (boundp 'latexmkbuffer) (get-buffer "vterm"))
-      (restartlatexgen)
-    (let ((usedbuffer (current-buffer))
-	  (usedbuffername (buffer-name)))
-      (vterm)
-      (vterm-send-string (concat "latexmk -pvc -pdf " "'" usedbuffername "'"))
-      ;; (execute-kbd-macro (read-kbd-macro "TAB"))
-      (vterm-send-return)
-      (setlatexmkbuffer)
-      (switch-to-buffer usedbuffer))))
-
-
-(defun weeb/restartlatexgen ()
-  "Restarts latexmk if it ran in a problem. Use this after you fixed the problem"
-  (interactive)
-  (let ((usedbuffer (current-buffer)))
-  (switch-to-buffer latexmkbuffer)
-  (execute-kbd-macro (read-kbd-macro "C-d"))
-  (switch-to-buffer usedbuffer))
-  (save-buffer))
-
-
-(defun weeb/latex-add-newlines ()
-  "Adds \"\\\\\" at the end of line. With a prefix argument, runs the command for ARG lines."
-  (interactive)
-  (if (not (use-region-p))
-      (progn (end-of-syntax)
-	     (insert "\\\\"))
-    (let ((undo-inhibit-record-point t))
-      (goto-char (region-beginning))
-      (while (< (line-number-at-pos) (line-number-at-pos (region-end)))
-      (end-of-syntax)
-      (insert "\\\\")
-      (next-line)))) (point)
-  (undo-boundary))
+;;; init.el ends here
