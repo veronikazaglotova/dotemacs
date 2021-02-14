@@ -27,22 +27,22 @@
   (prescient-persist-mode 1)
   (counsel-mode 1)
   :bind
+  ("M-x" . counsel-M-x)
+  ("C-f" . counsel-find-file)
+  (:prefix-map ctl-comma-map
+               :prefix "C-,"
+               ("m" . counsel-mark-ring)
+               ("y" . counsel-yank-pop))
   (:map ivy-minibuffer-map
 	          ("C-r" . minibuffer-history)
 	          ("TAB" . ivy-alt-done))
   (:map ctl-x-map
         ("k" . kill-current-buffer))
-  ("M-x" . counsel-M-x)
-  ("C-f" . counsel-find-file)
   (:map help-map
         ("f" . counsel-describe-function)
         ("v" . counsel-describe-variable)
         ("o" . counsel-describe-symbol)
         ("l" . counsel-find-library))
-  (:prefix "C-,"
-           :prefix-map ctl-comma-map
-           ("m" . counsel-mark-ring)
-           ("y" . counsel-yank-pop))
   :custom
   (ivy-use-virtual-buffers t)
   (enable-recursive-minibuffers t)
@@ -206,6 +206,9 @@ prefix ARG go to the first character instead."
   :config
   (load-theme 'base16-solarflare t))
 
+(use-package which-key
+  :config
+ (which-key-mode))
 
 (use-package display-line-numbers
   :config
