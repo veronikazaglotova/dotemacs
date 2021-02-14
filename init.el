@@ -352,7 +352,7 @@ Position the cursor at its beginning, according to the current mode."
   (projectile-mode))
 
 
-(use-package magit)
+(use-package magit)                     ; test
 
 
 (provide 'init)
