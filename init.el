@@ -52,27 +52,6 @@
   ivy-prescient-mode)
 
 
-
-(use-package ace-window
-  :bind
-  ("M-s" . ace-window)
-  :custom
-  (aw-keys '(?u ?h ?t ?e ?n ?o))
-  (aw-dispatch-alist
-   '((?x aw-delete-window "Delete Window")
-	 (?m aw-swap-window "Swap Windows")
-	 (?M aw-move-window "Move Window")
-	 (?c aw-copy-window "Copy Window")
-	 (?s aw-switch-buffer-in-window "Select Buffer")
-	 (?F aw-flip-window)
-	 (?s aw-switch-buffer-other-window "Switch Buffer Other Window")
-	 (?f aw-split-window-fair "Split Fair Window")
-	 (?v aw-split-window-vert "Split Vert Window")
-	 (?V aw-split-window-horz "Split Horz Window")
-	 (?k delete-other-windows "Delete Other Windows")
-	 (?/ aw-show-dispatch-help))))
-
-
 (use-package swiper
   :bind
   ("C-s" . swiper))
@@ -206,9 +185,11 @@ prefix ARG go to the first character instead."
   :config
   (load-theme 'base16-solarflare t))
 
+
 (use-package which-key
   :config
  (which-key-mode))
+
 
 (use-package display-line-numbers
   :config
