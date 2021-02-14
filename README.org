@@ -1,5 +1,5 @@
 * How to install:
-  Run =git clone https://github.com/veronikazaglotova/dotemacs ~/.emacs.d= in your terminal window.
+  Run =git clone https://github.com/veronikazaglotova/nuemacs ~/.emacs.d= in your terminal window.
 
 * How to use:
   Read the source code and figure it out. There are docstrings and/or comments for every non-trivial task.
