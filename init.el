@@ -28,21 +28,21 @@
   (counsel-mode 1)
   :bind
   ("M-x" . counsel-M-x)
-  ("C-f" . counsel-find-file)
-  (:prefix-map ctl-comma-map
+  ((:prefix-map ctl-comma-map
                :prefix "C-,"
                ("m" . counsel-mark-ring)
-               ("y" . counsel-yank-pop))
-  (:map ivy-minibuffer-map
+               ("y" . counsel-yank-pop)))
+  ((:map ivy-minibuffer-map
 	          ("C-r" . minibuffer-history)
-	          ("TAB" . ivy-alt-done))
-  (:map ctl-x-map
-        ("k" . kill-current-buffer))
-  (:map help-map
+	          ("TAB" . ivy-alt-done)))
+  ((:map ctl-x-map
+         ("k" . kill-current-buffer)
+         ("C-f" . counsel-find-file)))
+  ((:map help-map
         ("f" . counsel-describe-function)
         ("v" . counsel-describe-variable)
         ("o" . counsel-describe-symbol)
-        ("l" . counsel-find-library))
+        ("l" . counsel-find-library)))
   :custom
   (ivy-use-virtual-buffers t)
   (enable-recursive-minibuffers t)
