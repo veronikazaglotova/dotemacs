@@ -207,13 +207,6 @@ prefix ARG go to the first character instead."
   (load-theme 'base16-solarflare t))
 
 
-(use-package emacs			; remove fugly stuff
-  :config
-  (menu-bar-mode -1)
-  (scroll-bar-mode -1)
-  (tool-bar-mode -1))
-
-
 (use-package display-line-numbers
   :config
   (global-display-line-numbers-mode)

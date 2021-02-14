@@ -16,3 +16,7 @@
 (setq custom-file (concat user-emacs-directory "customize.el"))
 (when (file-exists-p custom-file)
   (load-file custom-file))
+
+(menu-bar-mode -1)
+(scroll-bar-mode -1)
+(tool-bar-mode -1)
