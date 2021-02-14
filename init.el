@@ -11,7 +11,8 @@
 ;;; Code:
 
 
-(use-package use-package-hydra)         ;I don't know how to use this
+(use-package use-package-hydra
+  :straight t hydra)         ;I don't know how to use this
                                         ;but let it be
 (use-package diminish)			;I NEED THIS
 
@@ -25,11 +26,23 @@
   (ivy-rich-mode)
   (prescient-persist-mode 1)
   (counsel-mode 1)
-  :bind (:map ivy-minibuffer-map
+  :bind
+  (:map ivy-minibuffer-map
 	          ("C-r" . minibuffer-history)
 	          ("TAB" . ivy-alt-done))
   (:map ctl-x-map
         ("k" . kill-current-buffer))
+  ("M-x" . counsel-M-x)
+  ("C-f" . counsel-find-file)
+  (:map help-map
+        ("f" . counsel-describe-function)
+        ("v" . counsel-describe-variable)
+        ("o" . counsel-describe-symbol)
+        ("l" . counsel-find-library))
+  (:prefix "C-,"
+           :prefix-map ctl-comma-map
+           ("m" . counsel-mark-ring)
+           ("y" . counsel-yank-pop))
   :custom
   (ivy-use-virtual-buffers t)
   (enable-recursive-minibuffers t)
@@ -37,6 +50,7 @@
   counsel-mode
   ivy-rich-mode
   ivy-prescient-mode)
+
 
 
 (use-package ace-window
@@ -82,7 +96,8 @@ prefix ARG go to the first character instead."
       (avy-goto-char-timer))))
 
 
-(use-package boon)
+;;(use-package boon)
+;; for future
 
 
 (use-package sly)
@@ -130,6 +145,7 @@ prefix ARG go to the first character instead."
   (global-flycheck-mode 1)
   :custom
   (flycheck-emacs-lisp-load-path 'inherit)
+  (flycheck-disabled-checker '())
   :diminish
   flycheck-mode)
 
