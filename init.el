@@ -1,4 +1,4 @@
-;;; init.el --- my Emacs configuration file
+`';;; init.el --- my Emacs configuration file
 ;; -*- lexical-binding: t; -*-
 ;; C-x C-e this function to make everything separated by 2 newline:
 ;; (replace-regexp "^\n+" "\n\n")
@@ -11,10 +11,34 @@
 ;;; Code:
 
 
+(use-package dashboard
+  :init
+  (dashboard-setup-startup-hook)
+  :custom
+  (dashboard-center-content t)
+  (dashboard-banner-logo-title "Welcum to GNU Emacs"))
+
+
 (use-package use-package-hydra
   :straight t hydra)         ;I don't know how to use this
                                         ;but let it be
 (use-package diminish)			;I NEED THIS
+
+
+
+
+(use-package elpy
+  :config
+  (setq python-shell-interpreter "jupyter"
+        python-shell-interpreter-args "console --simple-prompt"
+        python-shell-prompt-detect-failure-warning nil)
+  (add-to-list 'python-shell-completion-native-disabled-interpreters
+               "jupyter")
+  (elpy-enable)
+
+  (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
+  (setq elpy-modules (delq 'elpy-module-highlight-indentation elpy-modules))
+  (add-hook 'elpy-mode-hook #'flycheck-mode))
 
 
 (use-package counsel
@@ -22,10 +46,10 @@
   :config
   (setcdr (assq t ivy-format-functions-alist)
           #'ivy-format-function-line)
-  (ivy-prescient-mode 1)
+  (ivy-prescient-mode)
   (ivy-rich-mode)
-  (prescient-persist-mode 1)
-  (counsel-mode 1)
+  (prescient-persist-mode)
+  (counsel-mode)
   :bind
   ("M-x" . counsel-M-x)
   ((:prefix-map ctl-comma-map
@@ -37,7 +61,8 @@
 	          ("TAB" . ivy-alt-done)))
   ((:map ctl-x-map
          ("k" . kill-current-buffer)
-         ("C-f" . counsel-find-file)))
+         ("C-f" . counsel-find-file)
+         ("b" . counsel-switch-buffer)))
   ((:map help-map
         ("f" . counsel-describe-function)
         ("v" . counsel-describe-variable)
@@ -55,6 +80,7 @@
 (use-package swiper
   :bind
   ("C-s" . swiper))
+
 
 
 (use-package avy
@@ -75,19 +101,43 @@ prefix ARG go to the first character instead."
       (avy-goto-char-timer))))
 
 
-;;(use-package boon)
+(use-package boon
+  :custom
+  (hi-lock-auto-select-face t))
 ;; for future
+
+(use-package with-editor
+  :hook
+  ((eshell-mode term-exec shell-mode) . with-editor-export-editor))
+
+
+(use-package eshell
+  )
+
+
+(use-package fix-input
+  :config
+  (fix-input "english-dvorak"   ;; matches alternative layout
+             "russian-computer" ;; works with QWERTY
+             "dvorak-russian")
+  (set-input-method "dvorak-russian" t)
+  (toggle-input-method))
+    ;; name of new input method that
+  ;; preserves
+  ;; the same layout with Dvorak
 
 
 (use-package sly)
 
 
-(use-package magit)
+(use-package magit
+  :straight t forge
+  )
 
 
 (use-package undo-tree
   :config
-  (global-undo-tree-mode 1)
+  (global-undo-tree-mode)
   :diminish
   undo-tree-mode)
 
@@ -106,8 +156,8 @@ prefix ARG go to the first character instead."
   (company-dabbrev-downcase 0)
   (company--show-numbers t)
   :config
-  (global-company-mode 1)
-  (yas-global-mode 1)
+  (global-company-mode)
+  (yas-global-mode)
   :diminish
   company-mode
   yas-global-mode
@@ -116,15 +166,15 @@ prefix ARG go to the first character instead."
 
 (use-package telephone-line
   :config
-  (telephone-line-mode 1))
+  (telephone-line-mode))
 
 
 (use-package flycheck
   :config
-  (global-flycheck-mode 1)
+  (global-flycheck-mode)
   :custom
   (flycheck-emacs-lisp-load-path 'inherit)
-  (flycheck-disabled-checker '())
+  (flycheck-disabled-checkers '(emacs-lisp emacs-lisp-checkdoc))
   :diminish
   flycheck-mode)
 
@@ -138,7 +188,7 @@ prefix ARG go to the first character instead."
   (page-break-lines-mode visual-line-mode))
 
 
-(use-package emacs 			; fonts and stuff
+(use-package emacs                      ; fonts and stuff
   :config
   (set-frame-font "Iosevka 12" nil t)
   (prefer-coding-system 'utf-8))
@@ -166,24 +216,35 @@ prefix ARG go to the first character instead."
   ("M-<return>" . ansi-term))
 
 
+
+
 (use-package smartparens
   :config
-  (smartparens-global-mode 1)
-  (show-smartparens-global-mode 1)
-  (require 'smartparens-config)
+  (smartparens-global-strict-mode)
+  (show-smartparens-global-mode)
   :diminish
   smartparens-strict-mode
   smartparens-mode
-  :bind (
-	     :prefix-map ctl-quote-map
-		 :prefix "C-'"
-		 ("0" . sp-beginning-of-sexp)
-		 ("e" . sp-end-of-sexp)))
+  :hydra
+  (sp-hydra (global-map "M-s")
+            ("a" sp-beginning-of-sexp "Beginning")
+            ("e" sp-end-of-sexp "End")
+            ("b" sp-previous-sexp "Backward")
+            ("f" sp-next-sexp "Forward")
+            ("s" sp-unwrap-sexp "Stripf")
+            ("M-s" sp-backward-unwrap-sexp "Stripb")
+            ("r f" sp-forward-slurp-sexp ")>")
+            ("r b" sp-forward-barf-sexp ")<")
+            ("l f" sp-backward-slurp-sexp "(>")
+            ("l b" sp-backward-barf-sexp "(<")
+            ("k" sp-kill-sexp "Kill")
+            ("")
+            ("." hydra-repeat "Repeat")))
 
 
 (use-package base16-theme
   :config
-  (load-theme 'base16-solarflare t))
+  (load-theme 'base16-tomorrow t))
 
 
 (use-package which-key
@@ -202,16 +263,19 @@ prefix ARG go to the first character instead."
 
 (use-package emacs                      ;fill-column
   :config
-  (global-display-fill-column-indicator-mode 1)
+  (global-display-fill-column-indicator-mode)
   :custom
-  (auto-fill-function 'do-auto-fill))
+  (auto-fill-function 'do-auto-fill)
+  (auto-fill-column 79)
+  :hook
+  (dashboard-mode . (lambda () (display-fill-column-indicator-mode 0))))
 
 
 (use-package emacs                 ;make it behave like normal editors
   :config
   (global-display-line-numbers-mode)
-  (delete-selection-mode 1)
-  (global-prettify-symbols-mode 1)
+  (delete-selection-mode)
+  (global-prettify-symbols-mode)
   (savehist-mode)
   (prefer-coding-system 'utf-8)
   (delete-selection-mode)
@@ -276,6 +340,7 @@ prefix ARG go to the first character instead."
   ("C-y" . weeb/kill-or-yank-dwim)
   ("C-o" . weeb/er-smart-open-line)
   ("M-o" . weeb/er-smart-Open-line)
+  ("C-;" . comment-line)
   (:map ctl-x-map
 	    ("M-s" . weeb/switch-to-scratch-buffer))
   :init
@@ -350,9 +415,6 @@ Position the cursor at its beginning, according to the current mode."
 (use-package projectile
   :config
   (projectile-mode))
-
-
-(use-package magit)                     ; test
 
 
 (provide 'init)
