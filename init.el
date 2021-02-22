@@ -1,4 +1,4 @@
-`';;; init.el --- my Emacs configuration file
+;;; init.el --- my Emacs configuration file
 ;; -*- lexical-binding: t; -*-
 ;; C-x C-e this function to make everything separated by 2 newline:
 ;; (replace-regexp "^\n+" "\n\n")
@@ -22,9 +22,9 @@
 (use-package use-package-hydra
   :straight t hydra)         ;I don't know how to use this
                                         ;but let it be
+
+
 (use-package diminish)			;I NEED THIS
-
-
 
 
 (use-package elpy
@@ -36,56 +36,50 @@
                "jupyter")
   (elpy-enable)
 
+
   (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
   (setq elpy-modules (delq 'elpy-module-highlight-indentation elpy-modules))
   (add-hook 'elpy-mode-hook #'flycheck-mode))
 
 
-(use-package counsel
-  :straight t ivy-rich ivy-prescient pcre2el
+(use-package selectrum-prescient
   :config
-  (setcdr (assq t ivy-format-functions-alist)
-          #'ivy-format-function-line)
-  (ivy-prescient-mode)
-  (ivy-rich-mode)
-  (prescient-persist-mode)
-  (counsel-mode)
-  :bind
-  ("M-x" . counsel-M-x)
-  ((:prefix-map ctl-comma-map
-               :prefix "C-,"
-               ("m" . counsel-mark-ring)
-               ("y" . counsel-yank-pop)))
-  ((:map ivy-minibuffer-map
-	          ("C-r" . minibuffer-history)
-	          ("TAB" . ivy-alt-done)))
-  ((:map ctl-x-map
-         ("k" . kill-current-buffer)
-         ("C-f" . counsel-find-file)
-         ("b" . counsel-switch-buffer)))
-  ((:map help-map
-        ("f" . counsel-describe-function)
-        ("v" . counsel-describe-variable)
-        ("o" . counsel-describe-symbol)
-        ("l" . counsel-find-library)))
+  (selectrum-mode +1)
+  (selectrum-prescient-mode +1)
+  (prescient-persist-mode +1))
+
+
+(use-package marginalia
+  :straight (marginalia :type git :host github
+                        :repo "minad/marginalia" :branch "main")
+  :config
+  (marginalia-mode)
   :custom
-  (ivy-use-virtual-buffers t)
-  (enable-recursive-minibuffers t)
-  :diminish
-  counsel-mode
-  ivy-rich-mode
-  ivy-prescient-mode)
+  (marginalia-annotators '(marginalia-annotators-heavy
+                           marginalia-annotators-light)))
 
 
-(use-package swiper
-  :bind
-  ("C-s" . swiper))
+(use-package embark-consult
+  :after (embark consult))
 
+
+(use-package consult
+  :bind (
+         ("M-y" . consult-yank-pop)
+         ("C-s" . consult-line))
+  (:map ctl-x-map
+        ("r" . consult-ripgrep)
+        ("b" . consult-buffer)
+        )
+
+
+  :custom
+  (consult-line-point-placement 'match-end)) ; sadly point-placement doesn't work with Selectrum
 
 
 (use-package avy
   :custom
-  (avy-keys '(?e ?t ?h ?u ?o ?n) "Use home row with avy. All keys but pinkies and middle column on Dvorak.")
+  (avy-keys '(?e ?t ?h ?u ?o ?n) "Use me row with avy. All keys but pinkies and middle column on Dvorak.")
   (avy-timeout-seconds 0.7 "Avy is too fast and I'm a boomer.")
   :bind
   ("C-r" . weeb/avy-goto-char-timer-end)
@@ -105,6 +99,7 @@ prefix ARG go to the first character instead."
   :custom
   (hi-lock-auto-select-face t))
 ;; for future
+
 
 (use-package with-editor
   :hook
@@ -164,9 +159,9 @@ prefix ARG go to the first character instead."
   yas-minor-mode)
 
 
-(use-package telephone-line
-  :config
-  (telephone-line-mode))
+;; (use-package telephone-line
+  ;; :config
+  ;; (telephone-line-mode))
 
 
 (use-package flycheck
@@ -190,7 +185,7 @@ prefix ARG go to the first character instead."
 
 (use-package emacs                      ; fonts and stuff
   :config
-  (set-frame-font "Iosevka 12" nil t)
+  (set-frame-font "Iosevka 13" nil t)
   (prefer-coding-system 'utf-8))
 
 
@@ -205,7 +200,9 @@ prefix ARG go to the first character instead."
   (highlight-indent-guides-method 'character)
   (highlight-indent-guides-responsive 'top)
   :hook
-  (prog-mode . highlight-indent-guides-mode))
+  (prog-mode . highlight-indent-guides-mode)
+  :diminish
+  highlight-indent-guides-mode)
 
 
 (use-package haskell-mode)
@@ -216,10 +213,11 @@ prefix ARG go to the first character instead."
   ("M-<return>" . ansi-term))
 
 
-
-
 (use-package smartparens
+  :straight (smartparens :flavor nil :type git :host github :repo "Fuco1/smartparens"
+  :branch master)
   :config
+  (require 'smartparens-config)
   (smartparens-global-strict-mode)
   (show-smartparens-global-mode)
   :diminish
@@ -238,18 +236,19 @@ prefix ARG go to the first character instead."
             ("l f" sp-backward-slurp-sexp "(>")
             ("l b" sp-backward-barf-sexp "(<")
             ("k" sp-kill-sexp "Kill")
-            ("")
             ("." hydra-repeat "Repeat")))
 
 
-(use-package base16-theme
+(use-package emacs                      ;theme
   :config
-  (load-theme 'base16-tomorrow t))
+  (load-theme 'adwaita t))
 
 
 (use-package which-key
   :config
- (which-key-mode))
+  (which-key-mode)
+  :diminish
+  which-key-mode)
 
 
 (use-package display-line-numbers
@@ -265,10 +264,12 @@ prefix ARG go to the first character instead."
   :config
   (global-display-fill-column-indicator-mode)
   :custom
+  (fill-column 79)
   (auto-fill-function 'do-auto-fill)
-  (auto-fill-column 79)
   :hook
-  (dashboard-mode . (lambda () (display-fill-column-indicator-mode 0))))
+  (dashboard-mode . (lambda () (display-fill-column-indicator-mode 0)))
+  :diminish
+  auto-fill-function)
 
 
 (use-package emacs                 ;make it behave like normal editors
@@ -304,6 +305,8 @@ prefix ARG go to the first character instead."
 						                          (buffer-name))))
                           (if (and match (= match 0)) "Emacs"
 			                "%b — Emacs"))))
+  :diminish
+  auto-revert-mode
   :bind
   ("C-=" . text-scale-increase)
   ("C--" . text-scale-decrease))
@@ -330,6 +333,18 @@ prefix ARG go to the first character instead."
         ad-do-it))))
 
 
+(use-package misc-cmds
+  :bind
+  ("C-a" . beginning-or-indentation)
+  ("C-;" . weeb/comment-region-lines-dwim)
+  :init
+  (defun weeb/comment-region-lines-dwim nil
+    (interactive)
+    (if (use-region-p)
+        (call-interactively #'comment-region-lines)
+      (call-interactively #'comment-line))))
+
+
 (use-package emacs                  ; editing stuff, default shortcuts
   :bind
   ("C-x M-l" . weeb/load-init-file)
@@ -341,6 +356,7 @@ prefix ARG go to the first character instead."
   ("C-o" . weeb/er-smart-open-line)
   ("M-o" . weeb/er-smart-Open-line)
   ("C-;" . comment-line)
+  ("M-k" . kill-whole-line)
   (:map ctl-x-map
 	    ("M-s" . weeb/switch-to-scratch-buffer))
   :init
@@ -412,9 +428,18 @@ Position the cursor at its beginning, according to the current mode."
   ("C-x 2" . make-frame-command))
 
 
+(use-package gcmh
+  :config
+  (gcmh-mode)
+  :diminish
+  gcmh-mode)
+
+
 (use-package projectile
   :config
-  (projectile-mode))
+  (projectile-mode)
+  :custom
+  (projectile-mode-line-prefix " "))
 
 
 (provide 'init)
