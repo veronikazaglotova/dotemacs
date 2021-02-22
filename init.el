@@ -333,18 +333,6 @@ prefix ARG go to the first character instead."
         ad-do-it))))
 
 
-(use-package misc-cmds
-  :bind
-  ("C-a" . beginning-or-indentation)
-  ("C-;" . weeb/comment-region-lines-dwim)
-  :init
-  (defun weeb/comment-region-lines-dwim nil
-    (interactive)
-    (if (use-region-p)
-        (call-interactively #'comment-region-lines)
-      (call-interactively #'comment-line))))
-
-
 (use-package emacs                  ; editing stuff, default shortcuts
   :bind
   ("C-x M-l" . weeb/load-init-file)
@@ -364,6 +352,15 @@ prefix ARG go to the first character instead."
     "Load the init file"
     (interactive)
     (load-file user-init-file))
+
+
+  (defun weeb/back-to-indentation-dwim ()
+    "Go to first non-whitespace on first keypress, second non-whitespace on
+    second keypress"
+    (interactive)
+    (if (looking-back "[ \t]+")
+        (beginning-of-line)
+      (back-to-indentation)))
 
 
   (defun weeb/end-of-syntax ()
@@ -394,16 +391,9 @@ When pressed again, this will go to the end of line."
     (if (equal (current-buffer) (get-buffer "*scratch*"))
 	    (previous-buffer)
       (switch-to-buffer "*scratch*")))
-  (defun weeb/back-to-indentation-dwim ()
-    "Go back to the first non-whitespace character. When pressed second time, go to the beginning of the line.
-This function alternates between first non-whitespace and beginning of the line."
-    (interactive)
-    (if (equal last-command 'weeb/back-to-indentation-dwim)
-	    (beginning-of-line)
-      (back-to-indentation)))
 
 
-  (defun weeb/er-smart-Open-line ()
+  (defun weeb/er-smart-Open-line ()     ;code not mine
     "Insert an empty line before the current line.
 Position the cursor at its beginning, according to the current mode"
     (interactive)
@@ -424,8 +414,9 @@ Position the cursor at its beginning, according to the current mode."
   :config
   (frames-only-mode)
   :bind
-  ("C-x 1" . delete-other-frames)
-  ("C-x 2" . make-frame-command))
+  (:map ctl-x-map
+        ("C-x 1" . delete-other-frames)
+        ("C-x 2" . make-frame-command)))
 
 
 (use-package gcmh
