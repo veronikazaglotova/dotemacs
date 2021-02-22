@@ -358,9 +358,11 @@ prefix ARG go to the first character instead."
     "Go to first non-whitespace on first keypress, second non-whitespace on
     second keypress"
     (interactive)
-    (if (looking-back "[ \t]+")
+    (if (looking-back "^[ \t]+")
         (beginning-of-line)
       (back-to-indentation)))
+
+
 
 
   (defun weeb/end-of-syntax ()
@@ -368,10 +370,10 @@ prefix ARG go to the first character instead."
 that isn't comments or spaces/tabs)
 When pressed again, this will go to the end of line."
     (interactive)
-    (if (not (equal last-command 'weeb/end-of-syntax))
+    (if (not (equal last-command #'weeb/end-of-syntax))
 	    (progn (skip-syntax-forward "^<" (line-end-position)) ; test
 	           (skip-syntax-backward " " (line-beginning-position)))
-      (end-of-line)))
+      (end-of-line)))                   ;test
 
 
   (defun weeb/kill-or-yank-dwim (&optional arg)
