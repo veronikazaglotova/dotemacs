@@ -11,12 +11,7 @@
 ;;; Code:
 
 
-(use-package dashboard
-  :init
-  (dashboard-setup-startup-hook)
-  :custom
-  (dashboard-center-content t)
-  (dashboard-banner-logo-title "Welcum to GNU Emacs"))
+(use-package general)
 
 
 (use-package use-package-hydra
@@ -28,18 +23,18 @@
 
 
 (use-package elpy
+  :custom
+  (python-shell-interpreter "jupyter")
+  (python-shell-interpreter-args "console --simple-prompt")
+  (python-shell-prompt-detect-failure-warning nil)
   :config
-  (setq python-shell-interpreter "jupyter"
-        python-shell-interpreter-args "console --simple-prompt"
-        python-shell-prompt-detect-failure-warning nil)
+  (setq elpy-modules (delq 'elpy-module-flymake elpy-modules)
+        elpy-modules (delq 'elpy-module-highlight-indentation elpy-modules))
   (add-to-list 'python-shell-completion-native-disabled-interpreters
                "jupyter")
   (elpy-enable)
-
-
-  (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
-  (setq elpy-modules (delq 'elpy-module-highlight-indentation elpy-modules))
-  (add-hook 'elpy-mode-hook #'flycheck-mode))
+  :hook
+  (elpy-mode . flycheck-mode))
 
 
 (use-package selectrum-prescient
@@ -64,15 +59,12 @@
 
 
 (use-package consult
-  :bind (
-         ("M-y" . consult-yank-pop)
-         ("C-s" . consult-line))
-  (:map ctl-x-map
+  :bind
+  ("M-y" . consult-yank-pop)
+  ("C-s" . consult-line)
+  (:prefix "C-," :prefix-map ctl-comma-map
         ("r" . consult-ripgrep)
-        ("b" . consult-buffer)
-        )
-
-
+        ("b" . consult-buffer))
   :custom
   (consult-line-point-placement 'match-end)) ; sadly point-placement doesn't work with Selectrum
 
@@ -95,15 +87,24 @@ prefix ARG go to the first character instead."
       (avy-goto-char-timer))))
 
 
-(use-package boon
-  :custom
-  (hi-lock-auto-select-face t))
-;; for future
+;; (use-package evil
+;;   :straight t undo-fu
+;;   :custom
+;;   (evil-want-C-d-scroll nil)
+;;   (evil-want-C-w-delete nil)
+;;   (evil-want-Y-yank-to-eol t)
+;;   (evil-shift-width tab-width)
+;;   (evil-move-cursor-back nil)
+;;   (evil-move-beyond-eol t)
+;;   (evil-cross-lines t)
+;;   (evil-undo-system 'undo-fu)
+;;   :config
+;;   (evil-mode))
 
 
-(use-package with-editor
-  :hook
-  ((eshell-mode term-exec shell-mode) . with-editor-export-editor))
+(use-package highlight-parentheses
+  :config
+  (highlight-parentheses-mode))
 
 
 (use-package eshell
@@ -112,29 +113,20 @@ prefix ARG go to the first character instead."
 
 (use-package fix-input
   :config
-  (fix-input "english-dvorak"   ;; matches alternative layout
-             "russian-computer" ;; works with QWERTY
+  (fix-input "english-dvorak"   ; matches alternative layout
+             "russian-typewriter" ; so that it works with Dvorak
              "dvorak-russian")
   (set-input-method "dvorak-russian" t)
   (toggle-input-method))
-    ;; name of new input method that
-  ;; preserves
-  ;; the same layout with Dvorak
 
 
-(use-package sly)
+(use-package sly
+  :custom
+  (inferior-lisp-program "sbcl"))
 
 
 (use-package magit
-  :straight t forge
-  )
-
-
-(use-package undo-tree
-  :config
-  (global-undo-tree-mode)
-  :diminish
-  undo-tree-mode)
+  :straight t forge)
 
 
 (use-package eldoc
@@ -159,11 +151,6 @@ prefix ARG go to the first character instead."
   yas-minor-mode)
 
 
-;; (use-package telephone-line
-  ;; :config
-  ;; (telephone-line-mode))
-
-
 (use-package flycheck
   :config
   (global-flycheck-mode)
@@ -174,18 +161,18 @@ prefix ARG go to the first character instead."
   flycheck-mode)
 
 
-(use-package page-break-lines
+(use-package emacs
   :config
-  (global-page-break-lines-mode)
+  (global-visual-line-mode)
   :custom
   (line-move-visual nil)
   :diminish
-  (page-break-lines-mode visual-line-mode))
+  visual-line-mode)
 
 
 (use-package emacs                      ; fonts and stuff
   :config
-  (set-frame-font "Iosevka 13" nil t)
+  (set-face-attribute 'default nil :height 150 :family "Iosevka")
   (prefer-coding-system 'utf-8))
 
 
@@ -214,12 +201,14 @@ prefix ARG go to the first character instead."
 
 
 (use-package smartparens
-  :straight (smartparens :flavor nil :type git :host github :repo "Fuco1/smartparens"
-  :branch master)
+  :straight (smartparens :flavor nil :type git :host github
+                         :repo "Fuco1/smartparens"
+                         :branch master)
   :config
   (require 'smartparens-config)
-  (smartparens-global-strict-mode)
+  (smartparens-global-mode)
   (show-smartparens-global-mode)
+  (add-to-list 'sp-lisp-modes 'sly-mrepl-mode)
   :diminish
   smartparens-strict-mode
   smartparens-mode
@@ -236,12 +225,28 @@ prefix ARG go to the first character instead."
             ("l f" sp-backward-slurp-sexp "(>")
             ("l b" sp-backward-barf-sexp "(<")
             ("k" sp-kill-sexp "Kill")
-            ("." hydra-repeat "Repeat")))
+            ("." hydra-repeat "Repeat")
+            ("c" weeb/close-all-parentheses "Close all parents"))
+  :init
+  (defun weeb/close-all-parentheses ()
+  (interactive "*")
+  (let ((closing nil))
+    (save-excursion
+      (while (condition-case nil
+         (progn
+           (backward-up-list)
+           (let ((syntax (syntax-after (point))))
+             (cl-case (car syntax)
+               ((4) (setq closing (cons (cdr syntax) closing)))
+               ((7 8) (setq closing (cons (char-after (point)) closing)))))
+           t)
+           ((scan-error) nil))))
+    (apply #'insert (nreverse closing)))))
 
 
-(use-package emacs                      ;theme
+(use-package modus-operandi-theme
   :config
-  (load-theme 'adwaita t))
+  (load-theme 'modus-operandi t))
 
 
 (use-package which-key
@@ -260,12 +265,13 @@ prefix ARG go to the first character instead."
   (display-line-numbers-grow-only t))
 
 
-(use-package emacs                      ;fill-column
+(use-package display-fill-column-indicator                      ;fill-column
   :config
   (global-display-fill-column-indicator-mode)
   :custom
   (fill-column 79)
-  (auto-fill-function 'do-auto-fill)
+  (auto-fill-function #'do-auto-fill)
+  (display-fill-column-indicator-character 9474)
   :hook
   (dashboard-mode . (lambda () (display-fill-column-indicator-mode 0)))
   :diminish
@@ -274,9 +280,9 @@ prefix ARG go to the first character instead."
 
 (use-package emacs                 ;make it behave like normal editors
   :config
+  (defalias 'yes-or-no-p #'y-or-n-p)
   (global-display-line-numbers-mode)
   (delete-selection-mode)
-  (global-prettify-symbols-mode)
   (savehist-mode)
   (prefer-coding-system 'utf-8)
   (delete-selection-mode)
@@ -321,70 +327,62 @@ prefix ARG go to the first character instead."
 
 
 (use-package emacs                      ; custom shit
-  :config
-  (defalias 'yes-or-no-p 'y-or-n-p)	;y or n instead of yes or no
+  :config)	;y or n instead of yes or no
 
 
-  ;; bury scratch buffer instead of killing it
-  (defadvice kill-buffer (around kill-buffer-around-advice activate)
-    (let ((buffer-to-kill (ad-get-arg 0)))
-      (if (equal buffer-to-kill "*scratch*")
-          (bury-buffer)
-        ad-do-it))))
+(use-package mwim
+  :bind
+  ("C-a" . mwim-beginning)
+  ("C-e" . mwim-end))
 
 
 (use-package emacs                  ; editing stuff, default shortcuts
   :bind
-  ("C-x M-l" . weeb/load-init-file)
-  ("C-e" . weeb/end-of-syntax)
-  ("C-a" . weeb/back-to-indentation-dwim)
+  (:map ctl-x-map ("M-l" . weeb/load-init-file))
+  (:map global-map
   ("RET" . newline-and-indent)
   ("M-a" . delete-indentation)
   ("C-y" . weeb/kill-or-yank-dwim)
   ("C-o" . weeb/er-smart-open-line)
   ("M-o" . weeb/er-smart-Open-line)
   ("C-;" . comment-line)
-  ("M-k" . kill-whole-line)
+  ("M-k" . kill-whole-line))
   (:map ctl-x-map
 	    ("M-s" . weeb/switch-to-scratch-buffer))
+  (:map emacs-lisp-mode-map
+        ("#" . endless/sharp))
   :init
+
+
   (defun weeb/load-init-file ()
     "Load the init file"
     (interactive)
     (load-file user-init-file))
 
 
-  (defun weeb/back-to-indentation-dwim ()
-    "Go to first non-whitespace on first keypress, second non-whitespace on
-    second keypress"
+  (defun weeb/highlight-loc ()
     (interactive)
-    (if (looking-back "^[ \t]+")
-        (beginning-of-line)
-      (back-to-indentation)))
+    (cl-flet
+        ((end-of-code ()
+                      (when (comment-search-forward (line-end-position) t)
+                        (goto-char (match-beginning 0))
+                        (skip-syntax-backward " "
+                                              (line-beginning-position)))))
 
 
-
-
-  (defun weeb/end-of-syntax ()
-    "Move to the end of code (e.g. everything
-that isn't comments or spaces/tabs)
-When pressed again, this will go to the end of line."
-    (interactive)
-    (if (not (equal last-command #'weeb/end-of-syntax))
-	    (progn (skip-syntax-forward "^<" (line-end-position)) ; test
-	           (skip-syntax-backward " " (line-beginning-position)))
-      (end-of-line)))                   ;test
+      (back-to-indentation)
+      (save-excursion (set-mark (progn (end-of-code) (point))))))
 
 
   (defun weeb/kill-or-yank-dwim (&optional arg)
     "Kills region if you marked anything, yanks if you didn't"
     (interactive)
     (cond ((use-region-p)
-	       (call-interactively 'kill-ring-save))
-	      ((eq last-command 'yank)
-	       (call-interactively 'yank-pop))
+	       (call-interactively #'kill-ring-save))
+	      ((eq last-command #'yank)
+	       (call-interactively #'yank-pop))
 	      (t
-	       (call-interactively 'yank))))
+	       (call-interactively #'yank))))
 
 
   (defun weeb/switch-to-scratch-buffer ()
@@ -417,8 +415,8 @@ Position the cursor at its beginning, according to the current mode."
   (frames-only-mode)
   :bind
   (:map ctl-x-map
-        ("C-x 1" . delete-other-frames)
-        ("C-x 2" . make-frame-command)))
+        ("1" . delete-other-frames)
+        ("2" . make-frame-command)))
 
 
 (use-package gcmh
